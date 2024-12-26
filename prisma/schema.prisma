@@ -1,0 +1,79 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  name     String
+}
+
+model App {
+  id          Int                   @id @default(autoincrement())
+  name        String                @unique
+  description String?
+  repository  String
+  branch      String
+  tokens      Token[]
+  ports       PortMapping[]
+  mounts      BindMount[]
+  variables   EnvironmentVariable[]
+  builds      Build[]
+}
+
+model PortMapping {
+  id       Int @id @default(autoincrement())
+  internal Int
+  external Int
+  app      App @relation(fields: [appId], references: [id])
+  appId    Int
+}
+
+model BindMount {
+  id       Int    @id @default(autoincrement())
+  internal String
+  host     String
+  app      App    @relation(fields: [appId], references: [id])
+  appId    Int
+}
+
+model Token {
+  id    Int    @id @default(autoincrement())
+  token String @unique
+  app   App    @relation(fields: [appId], references: [id])
+  appId Int
+}
+
+model EnvironmentVariable {
+  id    Int    @id @default(autoincrement())
+  key   String
+  value String
+  build String
+  app   App    @relation(fields: [appId], references: [id])
+  appId Int
+}
+
+model Build {
+  id         Int       @id @default(autoincrement())
+  branch     String
+  log        String
+  manual     Boolean
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  finishedAt DateTime?
+  status     Status    @default(BUILDING)
+  app        App       @relation(fields: [appId], references: [id])
+  appId      Int
+}
+
+enum Status {
+  BUILDING
+  FAILED
+  SUCCESS
+}
