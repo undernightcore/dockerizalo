@@ -1,12 +1,15 @@
 import { RequestHandler } from "express";
 import { prisma } from "../services/prisma";
-import { addSubscriber, removeSubscriber } from "../services/realtime";
+import {
+  addBuildSubscriber,
+  removeBuildSubscriber,
+} from "../services/realtime";
 import { abortBuild, initBuild } from "../services/builder";
 import { initDeploy } from "../services/deployer";
 
 export const createBuild: RequestHandler = async (req, res) => {
   const app = await prisma.app.findUnique({
-    where: { id: Number(req.params.id) },
+    where: { id: req.params.id },
   });
   if (!app) {
     res.status(404).json({ message: "This app does not exist" });
@@ -30,7 +33,7 @@ export const createBuild: RequestHandler = async (req, res) => {
   });
 
   initBuild(app, build, variables)
-    .then(() => initDeploy(build, ports, volumes, variables))
+    .then(() => initDeploy(app, build, ports, volumes, variables))
     .catch();
 
   res.status(200).json(build);
@@ -38,7 +41,7 @@ export const createBuild: RequestHandler = async (req, res) => {
 
 export const listenBuild: RequestHandler = async (req, res) => {
   const build = await prisma.build.findUnique({
-    where: { appId: Number(req.params.id), id: Number(req.params.buildId) },
+    where: { appId: req.params.id, id: req.params.buildId },
   });
 
   if (!build) {
@@ -51,9 +54,9 @@ export const listenBuild: RequestHandler = async (req, res) => {
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  const id = addSubscriber(res, build);
+  const id = addBuildSubscriber(res, build);
   res.on("close", () => {
-    removeSubscriber(id, build);
+    removeBuildSubscriber(id, build);
   });
 
   res.write(`data: ${JSON.stringify(build)}\n\n`);
@@ -61,7 +64,7 @@ export const listenBuild: RequestHandler = async (req, res) => {
 
 export const cancelBuild: RequestHandler = async (req, res) => {
   const build = await prisma.build.findUnique({
-    where: { appId: Number(req.params.id), id: Number(req.params.buildId) },
+    where: { appId: req.params.id, id: req.params.buildId },
   });
 
   if (!build) {

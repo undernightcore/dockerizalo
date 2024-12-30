@@ -15,7 +15,7 @@ model User {
 }
 
 model App {
-  id          Int                   @id @default(autoincrement())
+  id          String                @id @default(uuid())
   name        String                @unique
   description String?
   repository  String
@@ -28,39 +28,39 @@ model App {
 }
 
 model PortMapping {
-  id       Int @id @default(autoincrement())
+  id       String @id @default(uuid())
   internal Int
   external Int
-  app      App @relation(fields: [appId], references: [id])
-  appId    Int
+  app      App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId    String
 }
 
 model BindMount {
-  id       Int    @id @default(autoincrement())
+  id       String @id @default(uuid())
   internal String
   host     String
-  app      App    @relation(fields: [appId], references: [id])
-  appId    Int
+  app      App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId    String
 }
 
 model Token {
-  id    Int    @id @default(autoincrement())
+  id    String @id @default(uuid())
   token String @unique
-  app   App    @relation(fields: [appId], references: [id])
-  appId Int
+  app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId String
 }
 
 model EnvironmentVariable {
-  id    Int    @id @default(autoincrement())
+  id    String @id @default(uuid())
   key   String
   value String
   build String
-  app   App    @relation(fields: [appId], references: [id])
-  appId Int
+  app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId String
 }
 
 model Build {
-  id         Int       @id @default(autoincrement())
+  id         String    @id @default(uuid())
   branch     String
   log        String
   manual     Boolean
@@ -68,8 +68,8 @@ model Build {
   updatedAt  DateTime  @updatedAt
   finishedAt DateTime?
   status     Status    @default(BUILDING)
-  app        App       @relation(fields: [appId], references: [id])
-  appId      Int
+  app        App       @relation(fields: [appId], references: [id], onDelete: Cascade)
+  appId      String
 }
 
 enum Status {

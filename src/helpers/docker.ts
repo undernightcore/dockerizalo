@@ -15,7 +15,8 @@ export function createComposeConfiguration(
   const compose = {
     services: {
       app: {
-        image: `dockerizalo-app-${build.appId}-build-${build.id}`,
+        image: `dockerizalo-${build.id}`,
+        container_name: `dockerizalo-${build.appId}`,
         restart: "unless-stopped",
         ...(ports.length
           ? { ports: ports.map((port) => `${port.external}:${port.internal}`) }

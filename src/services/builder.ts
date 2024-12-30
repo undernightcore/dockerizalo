@@ -5,7 +5,7 @@ import { prisma } from "../services/prisma";
 import { sendBuildEvent } from "../services/realtime";
 import { buildImage } from "../services/docker";
 
-type BuildId = number;
+type BuildId = string;
 const runningBuilds = new Map<BuildId, AbortController>();
 
 export const initBuild = async (
@@ -28,7 +28,7 @@ export const initBuild = async (
     await appendLogToBuild(currentLog, "Building from Dockerfile...", build);
 
     await buildImage(
-      `dockerizalo-app-${app.id}-build-${build.id}`,
+      `dockerizalo-${build.id}`,
       directory,
       variables,
       (progress) => {

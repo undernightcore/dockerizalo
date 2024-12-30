@@ -1,6 +1,20 @@
 import { RequestHandler } from "express";
 import { createAppValidator } from "../validators/create-app.validator";
 import { prisma } from "../services/prisma";
+import { getContainerStatus } from "../services/docker";
+
+export const listApps: RequestHandler = async (_, res) => {
+  const apps = await prisma.app.findMany();
+
+  const status = await Promise.all(
+    apps.map(async (app) => ({
+      ...app,
+      status: await getContainerStatus(`dockerizalo-${app.id}`),
+    }))
+  );
+
+  res.status(200).json(status);
+};
 
 export const createApp: RequestHandler = async (req, res) => {
   const data = createAppValidator.parse(req.body);

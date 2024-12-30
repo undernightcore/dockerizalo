@@ -1,6 +1,8 @@
 import { EnvironmentVariable } from "@prisma/client";
+import { downAll, ps, upAll } from "docker-compose";
 import Dockerode from "dockerode";
-import { readdir } from "node:fs/promises";
+import { readdir, stat, writeFile } from "node:fs/promises";
+import { join } from "node:path";
 
 const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
 
@@ -36,4 +38,36 @@ export async function buildImage(
       progress
     );
   });
+}
+
+export async function startComposeStack(path: string) {
+  return upAll({ cwd: path });
+}
+
+export async function stopComposeStack(path: string) {
+  return stat(path)
+    .then(() => downAll({ cwd: path }))
+    .catch(() => undefined);
+}
+
+export async function getComposeStatus(path: string) {
+  const folder = await readdir(path).catch(() => undefined);
+  if (!folder) return "Down";
+
+  const compose = await ps({ cwd: path });
+  return compose.data.services.at(0)?.state ?? "Down";
+}
+
+export async function getContainerStatus(name: string) {
+  const container = await docker
+    .getContainer(name)
+    .inspect()
+    .catch(() => undefined);
+
+  if (!container) return "exited";
+  return container.State.Status;
+}
+
+export async function saveComposeConfiguration(config: string, path: string) {
+  return writeFile(join(path, "docker-compose.yml"), config);
 }
