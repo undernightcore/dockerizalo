@@ -1,7 +1,8 @@
 import { RequestHandler } from "express";
 import { prisma } from "../services/prisma";
-import { initBuild } from "../helpers/builds";
 import { addSubscriber, removeSubscriber } from "../services/realtime";
+import { abortBuild, initBuild } from "../services/builder";
+import { initDeploy } from "../services/deployer";
 
 export const createBuild: RequestHandler = async (req, res) => {
   const app = await prisma.app.findUnique({
@@ -16,7 +17,21 @@ export const createBuild: RequestHandler = async (req, res) => {
     data: { manual: true, branch: app.branch, log: "", appId: app.id },
   });
 
-  initBuild(app, build);
+  const variables = await prisma.environmentVariable.findMany({
+    where: { appId: app.id },
+  });
+
+  const ports = await prisma.portMapping.findMany({
+    where: { appId: app.id },
+  });
+
+  const volumes = await prisma.bindMount.findMany({
+    where: { appId: app.id },
+  });
+
+  initBuild(app, build, variables)
+    .then(() => initDeploy(build, ports, volumes, variables))
+    .catch();
 
   res.status(200).json(build);
 };
@@ -42,4 +57,24 @@ export const listenBuild: RequestHandler = async (req, res) => {
   });
 
   res.write(`data: ${JSON.stringify(build)}\n\n`);
+};
+
+export const cancelBuild: RequestHandler = async (req, res) => {
+  const build = await prisma.build.findUnique({
+    where: { appId: Number(req.params.id), id: Number(req.params.buildId) },
+  });
+
+  if (!build) {
+    res.status(404).json({ message: "There is no build with that id" });
+    return;
+  }
+
+  if (build.status !== "BUILDING") {
+    res.status(400).json({ message: "This build has already finished!" });
+    return;
+  }
+
+  abortBuild(build);
+
+  res.status(200).json({ message: "The build has been aborted..." });
 };

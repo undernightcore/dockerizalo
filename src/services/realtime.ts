@@ -2,8 +2,8 @@ import { Build } from "@prisma/client";
 import { Response } from "express";
 import { randomUUID } from "node:crypto";
 
-export type BuildId = number;
-export type SessionId = string;
+type BuildId = number;
+type SessionId = string;
 
 const buildSubscribers = new Map<BuildId, Map<SessionId, Response>>();
 
