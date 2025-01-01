@@ -73,17 +73,19 @@ export async function getContainerLogs(
   progress: (status: any) => void,
   abort: AbortSignal
 ) {
+  const currentLog = await docker.getContainer(name).logs({
+    stdout: true,
+    stderr: true,
+  });
+
+  progress(currentLog.toString());
+
   const stream = await docker
     .getContainer(name)
-    .logs({ follow: true, abortSignal: abort });
+    .attach({ stream: true, stdout: true, stderr: true, abortSignal: abort });
 
-  return new Promise((resolve, reject) => {
-    docker.modem.followProgress(
-      stream,
-      (err, res) => (err ? reject(err) : resolve(res)),
-      progress
-    );
-  });
+  stream.setEncoding("utf-8");
+  stream.on("data", (value) => progress(value.toString()));
 }
 
 export async function saveComposeConfiguration(config: string, path: string) {

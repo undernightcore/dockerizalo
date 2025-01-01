@@ -156,7 +156,7 @@ export const listenAppLogs: RequestHandler = async (req, res) => {
     abort.abort();
   });
 
-  await getContainerLogs(
+  getContainerLogs(
     `dockerizalo-${req.params.appId}`,
     (progress) => {
       res.write(`data: ${JSON.stringify(progress)}\n\n`);
