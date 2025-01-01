@@ -9,7 +9,7 @@ import { initDeploy } from "../services/deployer";
 
 export const createBuild: RequestHandler = async (req, res) => {
   const app = await prisma.app.findUnique({
-    where: { id: req.params.id },
+    where: { id: req.params.appId },
   });
   if (!app) {
     res.status(404).json({ message: "This app does not exist" });
@@ -41,7 +41,7 @@ export const createBuild: RequestHandler = async (req, res) => {
 
 export const listenBuild: RequestHandler = async (req, res) => {
   const build = await prisma.build.findUnique({
-    where: { appId: req.params.id, id: req.params.buildId },
+    where: { appId: req.params.appId, id: req.params.buildId },
   });
 
   if (!build) {
@@ -64,7 +64,7 @@ export const listenBuild: RequestHandler = async (req, res) => {
 
 export const cancelBuild: RequestHandler = async (req, res) => {
   const build = await prisma.build.findUnique({
-    where: { appId: req.params.id, id: req.params.buildId },
+    where: { appId: req.params.appId, id: req.params.buildId },
   });
 
   if (!build) {

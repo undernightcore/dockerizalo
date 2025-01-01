@@ -68,6 +68,24 @@ export async function getContainerStatus(name: string) {
   return container.State.Status;
 }
 
+export async function getContainerLogs(
+  name: string,
+  progress: (status: any) => void,
+  abort: AbortSignal
+) {
+  const stream = await docker
+    .getContainer(name)
+    .logs({ follow: true, abortSignal: abort });
+
+  return new Promise((resolve, reject) => {
+    docker.modem.followProgress(
+      stream,
+      (err, res) => (err ? reject(err) : resolve(res)),
+      progress
+    );
+  });
+}
+
 export async function saveComposeConfiguration(config: string, path: string) {
   return writeFile(join(path, "docker-compose.yml"), config);
 }

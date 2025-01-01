@@ -50,7 +50,7 @@ export function sendBuildEvent(build: Build) {
   }
 }
 
-export function sendAppEvent(app: App) {
+export function sendAppEvent(app: App & { status: string }) {
   const subscribers = [...(appSubscribers.get(app.id)?.values() ?? [])];
 
   for (const subscriber of subscribers) {
