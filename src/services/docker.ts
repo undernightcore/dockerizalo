@@ -1,7 +1,8 @@
 import { EnvironmentVariable } from "@prisma/client";
 import { downAll, ps, upAll } from "docker-compose";
 import Dockerode from "dockerode";
-import { readdir, stat, writeFile } from "node:fs/promises";
+import { load } from "js-yaml";
+import { readdir, stat, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
 
 const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
@@ -90,4 +91,24 @@ export async function getContainerLogs(
 
 export async function saveComposeConfiguration(config: string, path: string) {
   return writeFile(join(path, "docker-compose.yml"), config);
+}
+
+export async function getComposeConfiguration(path: string) {
+  return readFile(join(path, "docker-compose.yml"))
+    .then((file) => file.toString())
+    .catch(() => undefined);
+}
+
+export function getComposeImage(config: string) {
+  const compose = load(config) as { image?: string } | undefined;
+  return compose?.image;
+}
+
+export async function isImageAvailable(name: string) {
+  try {
+    await docker.getImage(name).inspect();
+    return true;
+  } catch {
+    return false;
+  }
 }

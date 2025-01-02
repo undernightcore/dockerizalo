@@ -2,8 +2,11 @@ import { RequestHandler } from "express";
 import { createAppValidator } from "../validators/create-app.validator";
 import { prisma } from "../services/prisma";
 import {
+  getComposeConfiguration,
+  getComposeImage,
   getContainerLogs,
   getContainerStatus,
+  isImageAvailable,
   startComposeStack,
   stopComposeStack,
 } from "../services/docker";
@@ -12,7 +15,8 @@ import {
   removeAppSubscriber,
   sendAppEvent,
 } from "../services/realtime";
-import { getOrCreateAppDirectory } from "../services/fs";
+import { getAppDirectory, getOrCreateAppDirectory } from "../services/fs";
+import { createBuild } from "./builds";
 
 export const listApps: RequestHandler = async (_, res) => {
   const apps = await prisma.app.findMany();
@@ -68,7 +72,7 @@ export const createApp: RequestHandler = async (req, res) => {
   res.status(201).json(app);
 };
 
-export const startApp: RequestHandler = async (req, res) => {
+export const startApp: RequestHandler = async (req, res, next) => {
   const app = await prisma.app.findUnique({
     where: { id: req.params.appId },
   });
@@ -84,7 +88,30 @@ export const startApp: RequestHandler = async (req, res) => {
     return;
   }
 
-  const directory = await getOrCreateAppDirectory(app);
+  const directory = await getAppDirectory(app);
+  if (!directory) {
+    await createBuild(req, res, next);
+    return;
+  }
+
+  const compose = await getComposeConfiguration(directory);
+  if (!compose) {
+    await createBuild(req, res, next);
+    return;
+  }
+
+  const image = getComposeImage(compose);
+  if (!image) {
+    await createBuild(req, res, next);
+    return;
+  }
+
+  const available = await isImageAvailable(image);
+  if (!available) {
+    await createBuild(req, res, next);
+    return;
+  }
+
   await startComposeStack(directory);
 
   const updatedApp = await prisma.app.findUniqueOrThrow({
