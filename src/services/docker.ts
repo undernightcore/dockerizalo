@@ -100,8 +100,11 @@ export async function getComposeConfiguration(path: string) {
 }
 
 export function getComposeImage(config: string) {
-  const compose = load(config) as { image?: string } | undefined;
-  return compose?.image;
+  const compose = load(config) as
+    | { services?: { app?: { image?: string } } }
+    | undefined;
+
+  return compose?.services?.app?.image;
 }
 
 export async function isImageAvailable(name: string) {

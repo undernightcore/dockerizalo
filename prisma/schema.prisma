@@ -51,11 +51,11 @@ model Token {
 }
 
 model EnvironmentVariable {
-  id    String @id @default(uuid())
+  id    String  @id @default(uuid())
   key   String
   value String
-  build String
-  app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
+  build Boolean
+  app   App     @relation(fields: [appId], references: [id], onDelete: Cascade)
   appId String
 }
 

@@ -36,7 +36,7 @@ export const createBuild: RequestHandler = async (req, res) => {
     .then(() => initDeploy(app, build, ports, volumes, variables))
     .catch();
 
-  res.status(200).json(build);
+  res.status(201).json(build);
 };
 
 export const listenBuild: RequestHandler = async (req, res) => {
