@@ -3,12 +3,14 @@ import { appsRouter } from "./routes/apps";
 import { buildsRouter } from "./routes/builds";
 import { configDotenv } from "dotenv";
 import { variablesRouter } from "./routes/variables";
+import { mountsRouter } from "./routes/mounts";
 
 configDotenv();
 
 const app = express();
 app.use(json());
 
+app.use("/apps/:appId/mounts", mountsRouter);
 app.use("/apps/:appId/variables", variablesRouter);
 app.use("/apps/:appId/builds", buildsRouter);
 app.use("/apps", appsRouter);

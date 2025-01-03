@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
-import { createVariableValidator } from "../validators/create-variable.validator";
+import { createVariableValidator } from "../validators/create-variable";
 import { prisma } from "../services/prisma";
-import { updateAllVariablesValidator } from "../validators/update-all-variables.validator";
+import { updateAllVariablesValidator } from "../validators/update-all-variables";
 import { toSet } from "../utils/array";
 
 export const listVariables: RequestHandler = async (req, res) => {
@@ -68,7 +68,7 @@ export const updateVariable: RequestHandler = async (req, res) => {
     return;
   }
 
-  const existing = await prisma.environmentVariable.findFirst({
+  const existing = await prisma.environmentVariable.findUnique({
     where: { appId: req.params.appId, id: req.params.variableId },
   });
   if (!existing) {
@@ -95,7 +95,7 @@ export const deleteVariable: RequestHandler = async (req, res) => {
     return;
   }
 
-  const existing = await prisma.environmentVariable.findFirst({
+  const existing = await prisma.environmentVariable.findUnique({
     where: { appId: req.params.appId, id: req.params.variableId },
   });
   if (!existing) {

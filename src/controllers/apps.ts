@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { createAppValidator } from "../validators/create-app.validator";
+import { createAppValidator } from "../validators/create-app";
 import { prisma } from "../services/prisma";
 import {
   getComposeConfiguration,
