@@ -20,7 +20,6 @@ model App {
   description String?
   repository  String
   branch      String
-  tokens      Token[]
   ports       PortMapping[]
   mounts      BindMount[]
   variables   EnvironmentVariable[]
@@ -43,15 +42,6 @@ model BindMount {
   host     String
   app      App    @relation(fields: [appId], references: [id], onDelete: Cascade)
   appId    String
-}
-
-model Token {
-  id    String @id @default(uuid())
-  token String
-  app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
-  appId String
-
-  @@unique([token, appId])
 }
 
 model EnvironmentVariable {
