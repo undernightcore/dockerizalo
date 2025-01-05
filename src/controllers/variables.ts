@@ -2,7 +2,6 @@ import { RequestHandler } from "express";
 import { createVariableValidator } from "../validators/create-variable";
 import { prisma } from "../services/prisma";
 import { updateAllVariablesValidator } from "../validators/update-all-variables";
-import { toSet } from "../utils/array";
 
 export const listVariables: RequestHandler = async (req, res) => {
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
@@ -123,13 +122,6 @@ export const updateAllVariables: RequestHandler = async (req, res) => {
     return;
   }
 
-  const allUnique =
-    toSet(data, (variable) => variable.key).size === data.length;
-  if (!allUnique) {
-    res.status(400).json({ message: "All variable keys must be unique!" });
-    return;
-  }
-
   await prisma.$transaction([
     prisma.environmentVariable.deleteMany({ where: { appId: app.id } }),
     prisma.environmentVariable.createMany({
@@ -137,5 +129,5 @@ export const updateAllVariables: RequestHandler = async (req, res) => {
     }),
   ]);
 
-  res.status(200).json({ message: "All variables have been created!" });
+  res.status(200).json({ message: "All variables have been updated!" });
 };
