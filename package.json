@@ -5,11 +5,13 @@
   "main": "dist/index.mjs",
   "dependencies": {
     "@prisma/client": "^6.1.0",
+    "bcrypt": "^5.1.1",
     "docker-compose": "^1.1.0",
     "dockerode": "^4.0.2",
     "dotenv": "^16.4.7",
     "express": "^5.0.1",
     "js-yaml": "^4.1.0",
+    "jsonwebtoken": "^9.0.2",
     "pkgroll": "^2.6.0",
     "prisma": "^6.1.0",
     "simple-git": "^3.27.0",
@@ -19,7 +21,9 @@
   "devDependencies": {
     "@types/dockerode": "^3.3.32",
     "@types/express": "^5.0.0",
-    "@types/js-yaml": "^4.0.9"
+    "@types/js-yaml": "^4.0.9",
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.7"
   },
   "scripts": {
     "start": "tsx watch src/index.ts",

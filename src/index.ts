@@ -8,6 +8,8 @@ import { portsRouter } from "./routes/ports";
 import { notFoundErrorHandler } from "./handlers/route";
 import { zodErrorHandler } from "./handlers/zod";
 import { defaultErrorHandler } from "./handlers/default";
+import { authErrorHandler } from "./handlers/auth";
+import { authRouter } from "./routes/auth";
 
 configDotenv();
 
@@ -19,9 +21,11 @@ app.use("/apps/:appId/mounts", mountsRouter);
 app.use("/apps/:appId/variables", variablesRouter);
 app.use("/apps/:appId/builds", buildsRouter);
 app.use("/apps", appsRouter);
+app.use("/auth", authRouter);
 
 app.use(notFoundErrorHandler);
 app.use(zodErrorHandler);
+app.use(authErrorHandler);
 app.use(defaultErrorHandler);
 
 app.listen(8080, () => console.info("Dockerizalo has started!"));
