@@ -3,9 +3,11 @@ import { prisma } from "../services/prisma";
 import {
   addBuildSubscriber,
   removeBuildSubscriber,
+  sendAppEvent,
 } from "../services/realtime";
 import { abortBuild, initBuild } from "../services/builder";
 import { initDeploy } from "../services/deployer";
+import { getContainerStatus } from "../services/docker";
 
 export const createBuild: RequestHandler = async (req, res) => {
   const app = await prisma.app.findUnique({
@@ -32,11 +34,18 @@ export const createBuild: RequestHandler = async (req, res) => {
     where: { appId: app.id },
   });
 
-  initBuild(app, build, variables)
-    .then(() => initDeploy(app, build, ports, volumes, variables))
-    .catch();
-
   res.status(201).json(build);
+
+  await initBuild(app, build, variables);
+  await initDeploy(app, build, ports, volumes, variables);
+
+  const latestApp = await prisma.app.findUnique({ where: { id: app.id } });
+  if (!latestApp) return;
+
+  sendAppEvent({
+    ...latestApp,
+    status: await getContainerStatus(`dockerizalo-${app.id}`),
+  });
 };
 
 export const listenBuild: RequestHandler = async (req, res) => {
