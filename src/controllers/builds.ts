@@ -8,8 +8,11 @@ import {
 import { abortBuild, initBuild } from "../services/builder";
 import { initDeploy } from "../services/deployer";
 import { getContainerStatus } from "../services/docker";
+import { authenticateUser } from "../services/auth";
 
 export const createBuild: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({
     where: { id: req.params.appId },
   });
@@ -49,6 +52,8 @@ export const createBuild: RequestHandler = async (req, res) => {
 };
 
 export const listenBuild: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const build = await prisma.build.findUnique({
     where: { appId: req.params.appId, id: req.params.buildId },
   });
@@ -72,6 +77,8 @@ export const listenBuild: RequestHandler = async (req, res) => {
 };
 
 export const cancelBuild: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const build = await prisma.build.findUnique({
     where: { appId: req.params.appId, id: req.params.buildId },
   });

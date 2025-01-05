@@ -2,8 +2,11 @@ import { RequestHandler } from "express";
 import { prisma } from "../services/prisma";
 import { createPortValidator } from "../validators/create-port";
 import { updateAllPortsValidator } from "../validators/update-all.ports";
+import { authenticateUser } from "../services/auth";
 
 export const listPorts: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
   if (!app) {
     res.status(404).json({ message: "There is no app with that id" });
@@ -16,6 +19,8 @@ export const listPorts: RequestHandler = async (req, res) => {
 };
 
 export const createPort: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const data = createPortValidator.parse(req.body);
 
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
@@ -42,6 +47,8 @@ export const createPort: RequestHandler = async (req, res) => {
 };
 
 export const updatePort: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const data = createPortValidator.parse(req.body);
 
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
@@ -81,6 +88,8 @@ export const updatePort: RequestHandler = async (req, res) => {
 };
 
 export const deletePort: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
   if (!app) {
     res.status(404).json({ message: "There is no app with that id" });
@@ -101,6 +110,8 @@ export const deletePort: RequestHandler = async (req, res) => {
 };
 
 export const updateAllPorts: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const data = updateAllPortsValidator.parse(req.body);
 
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });

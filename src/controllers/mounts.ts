@@ -2,8 +2,11 @@ import { RequestHandler } from "express";
 import { prisma } from "../services/prisma";
 import { createMountValidator } from "../validators/create-mount";
 import { updateAllMountsValidator } from "../validators/update-all-mounts";
+import { authenticateUser } from "../services/auth";
 
 export const listMounts: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
   if (!app) {
     res.status(404).json({ message: "There is no app with that id" });
@@ -18,6 +21,8 @@ export const listMounts: RequestHandler = async (req, res) => {
 };
 
 export const createMount: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const data = createMountValidator.parse(req.body);
 
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
@@ -34,6 +39,8 @@ export const createMount: RequestHandler = async (req, res) => {
 };
 
 export const updateMount: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const data = createMountValidator.parse(req.body);
 
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
@@ -59,6 +66,8 @@ export const updateMount: RequestHandler = async (req, res) => {
 };
 
 export const deleteMount: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
   if (!app) {
     res.status(404).json({ message: "There is no app with that id" });
@@ -81,6 +90,8 @@ export const deleteMount: RequestHandler = async (req, res) => {
 };
 
 export const updateAllMounts: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const data = updateAllMountsValidator.parse(req.body);
 
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });

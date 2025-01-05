@@ -17,8 +17,11 @@ import {
 } from "../services/realtime";
 import { getAppDirectory, getOrCreateAppDirectory } from "../services/fs";
 import { createBuild } from "./builds";
+import { authenticateUser } from "../services/auth";
 
-export const listApps: RequestHandler = async (_, res) => {
+export const listApps: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const apps = await prisma.app.findMany();
 
   const status = await Promise.all(
@@ -32,6 +35,8 @@ export const listApps: RequestHandler = async (_, res) => {
 };
 
 export const listenApp: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({
     where: { id: req.params.appId },
   });
@@ -60,6 +65,8 @@ export const listenApp: RequestHandler = async (req, res) => {
 };
 
 export const createApp: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const data = createAppValidator.parse(req.body);
 
   const exists = await prisma.app.findUnique({ where: { name: data.name } });
@@ -73,6 +80,8 @@ export const createApp: RequestHandler = async (req, res) => {
 };
 
 export const startApp: RequestHandler = async (req, res, next) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({
     where: { id: req.params.appId },
   });
@@ -127,6 +136,8 @@ export const startApp: RequestHandler = async (req, res, next) => {
 };
 
 export const stopApp: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({
     where: { id: req.params.appId },
   });
@@ -158,6 +169,8 @@ export const stopApp: RequestHandler = async (req, res) => {
 };
 
 export const listenAppLogs: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({
     where: { id: req.params.appId },
   });

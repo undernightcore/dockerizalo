@@ -2,8 +2,11 @@ import { RequestHandler } from "express";
 import { createVariableValidator } from "../validators/create-variable";
 import { prisma } from "../services/prisma";
 import { updateAllVariablesValidator } from "../validators/update-all-variables";
+import { authenticateUser } from "../services/auth";
 
 export const listVariables: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
   if (!app) {
     res
@@ -20,6 +23,8 @@ export const listVariables: RequestHandler = async (req, res) => {
 };
 
 export const createVariable: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const data = createVariableValidator.parse(req.body);
 
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
@@ -47,6 +52,8 @@ export const createVariable: RequestHandler = async (req, res) => {
 };
 
 export const updateVariable: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const data = createVariableValidator.parse(req.body);
 
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
@@ -86,6 +93,8 @@ export const updateVariable: RequestHandler = async (req, res) => {
 };
 
 export const deleteVariable: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
   if (!app) {
     res
@@ -112,6 +121,8 @@ export const deleteVariable: RequestHandler = async (req, res) => {
 };
 
 export const updateAllVariables: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
   const data = updateAllVariablesValidator.parse(req.body);
 
   const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
