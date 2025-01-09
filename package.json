@@ -6,6 +6,7 @@
   "dependencies": {
     "@prisma/client": "^6.1.0",
     "bcrypt": "^5.1.1",
+    "cors": "^2.8.5",
     "docker-compose": "^1.1.0",
     "dockerode": "^4.0.2",
     "dotenv": "^16.4.7",
@@ -19,11 +20,12 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/dockerode": "^3.3.32",
     "@types/express": "^5.0.0",
     "@types/js-yaml": "^4.0.9",
-    "@types/bcrypt": "^5.0.2",
-    "@types/jsonwebtoken": "^9.0.7"
+    "@types/jsonwebtoken": "^9.0.7",
+    "@types/cors": "^2.8.17"
   },
   "scripts": {
     "start": "tsx watch src/index.ts",

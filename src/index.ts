@@ -10,11 +10,13 @@ import { zodErrorHandler } from "./handlers/zod";
 import { defaultErrorHandler } from "./handlers/default";
 import { authErrorHandler } from "./handlers/auth";
 import { authRouter } from "./routes/auth";
+import cors from "cors";
 
 configDotenv();
 
 const app = express();
 app.use(json());
+app.use(cors());
 
 app.use("/apps/:appId/ports", portsRouter);
 app.use("/apps/:appId/mounts", mountsRouter);

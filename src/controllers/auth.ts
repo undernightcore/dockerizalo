@@ -42,13 +42,13 @@ export const loginUser: RequestHandler = async (req, res) => {
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {
-    res.status(401).json({ message: "Credenciales incorrectas" });
+    res.status(401).json({ message: "Invalid credentials" });
     return;
   }
 
   const isPasswordCorrent = await isValidPassword(password, user.password);
   if (!isPasswordCorrent) {
-    res.status(401).json({ message: "Credenciales incorrectas" });
+    res.status(401).json({ message: "Invalid credentials" });
     return;
   }
 
