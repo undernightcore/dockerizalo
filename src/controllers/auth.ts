@@ -1,4 +1,4 @@
-import { RequestHandler, request } from "express";
+import e, { RequestHandler, request } from "express";
 import { registerUserValidator } from "../validators/register-user";
 import { prisma } from "../services/prisma";
 import { authenticateUser } from "../services/auth";
@@ -53,4 +53,9 @@ export const loginUser: RequestHandler = async (req, res) => {
   }
 
   res.json({ token: createToken(user.id) });
+};
+
+export const getUser: RequestHandler = async (req, res) => {
+  const { email, name, id } = await authenticateUser(req);
+  res.status(200).json({ email, name, id });
 };
