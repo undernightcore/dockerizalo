@@ -2,6 +2,7 @@ import { RequestHandler } from "express";
 import { createAppValidator } from "../validators/create-app";
 import { prisma } from "../services/prisma";
 import {
+  getAllContainersStatus,
   getComposeConfiguration,
   getComposeImage,
   getContainerLogs,
@@ -23,13 +24,12 @@ export const listApps: RequestHandler = async (req, res) => {
   await authenticateUser(req);
 
   const apps = await prisma.app.findMany();
+  const containers = await getAllContainersStatus();
 
-  const status = await Promise.all(
-    apps.map(async (app) => ({
-      ...app,
-      status: await getContainerStatus(`dockerizalo-${app.id}`),
-    }))
-  );
+  const status = apps.map((app) => ({
+    ...app,
+    status: containers.get(`/dockerizalo-${app.id}`)?.status ?? "exited",
+  }));
 
   res.status(200).json(status);
 };

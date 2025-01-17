@@ -4,6 +4,7 @@ import Dockerode from "dockerode";
 import { load } from "js-yaml";
 import { readdir, stat, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
+import { toMap } from "../utils/array";
 
 const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
 
@@ -67,6 +68,23 @@ export async function getContainerStatus(name: string) {
 
   if (!container) return "exited";
   return container.State.Status;
+}
+
+export async function getAllContainers() {
+  return docker.listContainers();
+}
+
+export async function getAllContainersStatus() {
+  const containers = await getAllContainers();
+
+  const containerMap = toMap(
+    containers.flatMap((container) =>
+      container.Names.map((name) => ({ name, status: container.State }))
+    ),
+    (container) => container.name
+  );
+
+  return containerMap;
 }
 
 export async function getContainerLogs(
