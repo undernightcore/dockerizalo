@@ -79,6 +79,34 @@ export const createApp: RequestHandler = async (req, res) => {
   res.status(201).json(app);
 };
 
+export const updateApp: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
+  const data = createAppValidator.parse(req.body);
+
+  const app = await prisma.app.findUnique({
+    where: { id: req.params.appId },
+  });
+  if (!app) {
+    res.status(404).json({ message: "An app with that id does not exist" });
+    return;
+  }
+
+  const conflicting = await prisma.app.findUnique({
+    where: { name: data.name, NOT: { id: app.id } },
+  });
+  if (conflicting) {
+    res.status(400).json({ message: "An app with that name already exists" });
+    return;
+  }
+
+  const updated = await prisma.app.update({
+    data,
+    where: { id: app.id },
+  });
+  res.status(200).json(updated);
+};
+
 export const startApp: RequestHandler = async (req, res, next) => {
   await authenticateUser(req);
 
