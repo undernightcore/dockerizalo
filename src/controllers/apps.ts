@@ -92,6 +92,14 @@ export const updateApp: RequestHandler = async (req, res) => {
     return;
   }
 
+  const status = await getContainerStatus(`dockerizalo-${app.id}`);
+  if (status === "running") {
+    res
+      .status(400)
+      .json({ message: "You cannot edit an app that is currently running" });
+    return;
+  }
+
   const conflicting = await prisma.app.findUnique({
     where: { name: data.name, NOT: { id: app.id } },
   });
