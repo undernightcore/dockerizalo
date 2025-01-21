@@ -112,6 +112,12 @@ export const updateApp: RequestHandler = async (req, res) => {
     data,
     where: { id: app.id },
   });
+
+  sendAppEvent({
+    ...updated,
+    status: await getContainerStatus(`dockerizalo-${app.id}`),
+  });
+
   res.status(200).json(updated);
 };
 
