@@ -2,7 +2,7 @@ import { App, Build, EnvironmentVariable } from "@prisma/client";
 import { createTemporalDirectory } from "../services/fs";
 import { changeBranch, cloneRepo } from "../services/git";
 import { prisma } from "../services/prisma";
-import { sendBuildEvent } from "../services/realtime";
+import { sendBuildEvent, sendBuildsEvent } from "../services/realtime";
 import { buildImage } from "../services/docker";
 
 type BuildId = string;
@@ -19,13 +19,17 @@ export const initBuild = async (
   runningBuilds.set(build.id, abort);
 
   try {
-    await appendLogToBuild(currentLog, "Cloning repository!", build);
+    await appendLogToBuild(currentLog, "Cloning repository!\n\n", build);
 
     const directory = await createTemporalDirectory();
     await cloneRepo(app.repository, directory, abort.signal);
     await changeBranch(build.branch, directory);
 
-    await appendLogToBuild(currentLog, "Building from Dockerfile...", build);
+    await appendLogToBuild(
+      currentLog,
+      "Building from Dockerfile...\n----------------------------\n\n",
+      build
+    );
 
     await buildImage(
       `dockerizalo-${build.id}`,
@@ -40,8 +44,9 @@ export const initBuild = async (
     );
 
     runningBuilds.delete(build.id);
-    return await finishBuild(currentLog, true, build);
+    await finishBuild(currentLog, true, build);
   } catch (e) {
+    appendLogToBuild(currentLog, e.message, build);
     runningBuilds.delete(build.id);
     await finishBuild(currentLog, false, build);
     throw e;
@@ -57,7 +62,7 @@ const appendLogToBuild = async (
   message: string,
   build: Build
 ) => {
-  log.value += `${message}\n`;
+  log.value += message;
 
   const updatedBuild = await prisma.build.update({
     where: { id: build.id },
@@ -76,7 +81,9 @@ const finishBuild = async (
 ) => {
   await appendLogToBuild(
     log,
-    success ? "Build finished successfully!" : "Build has failed...",
+    success
+      ? "\n\nBuild finished successfully!\n----------------------------\n"
+      : "\n\nBuild has failed...\n--------------------\n",
     build
   );
 
@@ -86,6 +93,21 @@ const finishBuild = async (
   });
 
   sendBuildEvent(updatedBuild);
+
+  const afterBuildsList = await prisma.build.findMany({
+    select: {
+      id: true,
+      branch: true,
+      manual: true,
+      status: true,
+      createdAt: true,
+      finishedAt: true,
+    },
+    where: { appId: build.appId },
+    take: 100,
+    orderBy: { updatedAt: "desc" },
+  });
+  sendBuildsEvent(afterBuildsList);
 
   return updatedBuild;
 };

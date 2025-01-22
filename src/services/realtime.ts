@@ -10,6 +10,8 @@ const buildSubscribers = new Map<BuildId, Map<SessionId, Response>>();
 type AppId = string;
 const appSubscribers = new Map<AppId, Map<SessionId, Response>>();
 
+const buildsSubscribers = new Map<SessionId, Response>();
+
 export function addBuildSubscriber(subscriber: Response, build: Build) {
   const buildMap =
     buildSubscribers.get(build.id) ??
@@ -34,12 +36,24 @@ export function addAppSubscriber(subscriber: Response, app: App) {
   return id;
 }
 
+export function addBuildsSubscriber(subscriber: Response) {
+  const id = randomUUID();
+
+  buildsSubscribers?.set(id, subscriber);
+
+  return id;
+}
+
 export function removeBuildSubscriber(id: string, build: Build) {
   buildSubscribers.get(build.id)?.delete(id);
 }
 
 export function removeAppSubscriber(id: string, app: App) {
   appSubscribers.get(app.id)?.delete(id);
+}
+
+export function removeBuildsSubscriber(id: string) {
+  buildsSubscribers.delete(id);
 }
 
 export function sendBuildEvent(build: Build) {
@@ -55,5 +69,15 @@ export function sendAppEvent(app: App & { status: string }) {
 
   for (const subscriber of subscribers) {
     subscriber.write(`data: ${JSON.stringify(app)}\n\n`);
+  }
+}
+
+export function sendBuildsEvent(
+  builds: Omit<Build, "log" | "updatedAt" | "appId">[]
+) {
+  const subscribers = [...(buildsSubscribers.values() ?? [])];
+
+  for (const subscriber of subscribers) {
+    subscriber.write(`data: ${JSON.stringify(builds)}\n\n`);
   }
 }

@@ -2,8 +2,11 @@ import { RequestHandler } from "express";
 import { prisma } from "../services/prisma";
 import {
   addBuildSubscriber,
+  addBuildsSubscriber,
   removeBuildSubscriber,
+  removeBuildsSubscriber,
   sendAppEvent,
+  sendBuildsEvent,
 } from "../services/realtime";
 import { abortBuild, initBuild } from "../services/builder";
 import { initDeploy } from "../services/deployer";
@@ -39,6 +42,21 @@ export const createBuild: RequestHandler = async (req, res) => {
 
   res.status(201).json(build);
 
+  const beforeBuildsList = await prisma.build.findMany({
+    select: {
+      id: true,
+      branch: true,
+      manual: true,
+      status: true,
+      createdAt: true,
+      finishedAt: true,
+    },
+    where: { appId: req.params.appId },
+    take: 100,
+    orderBy: { updatedAt: "desc" },
+  });
+  sendBuildsEvent(beforeBuildsList);
+
   await initBuild(app, build, variables);
   await initDeploy(app, build, ports, volumes, variables);
 
@@ -49,6 +67,36 @@ export const createBuild: RequestHandler = async (req, res) => {
     ...latestApp,
     status: await getContainerStatus(`dockerizalo-${app.id}`),
   });
+};
+
+export const listenBuilds: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const id = addBuildsSubscriber(res);
+  res.on("close", () => {
+    removeBuildsSubscriber(id);
+  });
+
+  const builds = await prisma.build.findMany({
+    select: {
+      id: true,
+      branch: true,
+      manual: true,
+      status: true,
+      createdAt: true,
+      finishedAt: true,
+    },
+    where: { appId: req.params.appId },
+    take: 100,
+    orderBy: { updatedAt: "desc" },
+  });
+
+  res.write(`data: ${JSON.stringify(builds)}\n\n`);
 };
 
 export const listenBuild: RequestHandler = async (req, res) => {
