@@ -12,6 +12,7 @@ import {
   startComposeStack,
   stopComposeStack,
 } from "./docker";
+import { sendAppEvent } from "./realtime";
 
 export async function initDeploy(
   app: App,
@@ -23,6 +24,8 @@ export async function initDeploy(
   const path = await getOrCreateAppDirectory(app);
   await stopComposeStack(path);
 
+  await sendAppEvent(app.id);
+
   const composeFile = createComposeConfiguration(
     build,
     ports,
@@ -31,4 +34,6 @@ export async function initDeploy(
   );
   await saveComposeConfiguration(composeFile, path);
   await startComposeStack(path);
+
+  await sendAppEvent(app.id);
 }

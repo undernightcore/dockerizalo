@@ -1,16 +1,15 @@
 import { RequestHandler } from "express";
 import { prisma } from "../services/prisma";
 import {
+  addAppBuildsSubscriber,
   addBuildSubscriber,
-  addBuildsSubscriber,
+  removeAppBuildsSubscriber,
   removeBuildSubscriber,
-  removeBuildsSubscriber,
+  sendAppBuildsEvent,
   sendAppEvent,
-  sendBuildsEvent,
 } from "../services/realtime";
 import { abortBuild, initBuild } from "../services/builder";
 import { initDeploy } from "../services/deployer";
-import { getContainerStatus } from "../services/docker";
 import { authenticateUser } from "../services/auth";
 
 export const createBuild: RequestHandler = async (req, res) => {
@@ -42,44 +41,33 @@ export const createBuild: RequestHandler = async (req, res) => {
 
   res.status(201).json(build);
 
-  const beforeBuildsList = await prisma.build.findMany({
-    select: {
-      id: true,
-      branch: true,
-      manual: true,
-      status: true,
-      createdAt: true,
-      finishedAt: true,
-    },
-    where: { appId: req.params.appId },
-    take: 100,
-    orderBy: { updatedAt: "desc" },
-  });
-  sendBuildsEvent(beforeBuildsList);
+  sendAppBuildsEvent(app.id);
 
   await initBuild(app, build, variables);
   await initDeploy(app, build, ports, volumes, variables);
 
-  const latestApp = await prisma.app.findUnique({ where: { id: app.id } });
-  if (!latestApp) return;
-
-  sendAppEvent({
-    ...latestApp,
-    status: await getContainerStatus(`dockerizalo-${app.id}`),
-  });
+  sendAppEvent(app.id);
 };
 
 export const listenBuilds: RequestHandler = async (req, res) => {
   await authenticateUser(req);
+
+  const app = await prisma.app.findUnique({
+    where: { id: req.params.appId },
+  });
+  if (!app) {
+    res.status(404).json({ message: "This app does not exist" });
+    return;
+  }
 
   res.setHeader("Cache-Control", "no-cache");
   res.setHeader("Content-Type", "text/event-stream");
   res.setHeader("Connection", "keep-alive");
   res.flushHeaders();
 
-  const id = addBuildsSubscriber(res);
+  const id = addAppBuildsSubscriber(app.id, res);
   res.on("close", () => {
-    removeBuildsSubscriber(id);
+    removeAppBuildsSubscriber(app.id, id);
   });
 
   const builds = await prisma.build.findMany({
@@ -91,7 +79,7 @@ export const listenBuilds: RequestHandler = async (req, res) => {
       createdAt: true,
       finishedAt: true,
     },
-    where: { appId: req.params.appId },
+    where: { appId: app.id },
     take: 100,
     orderBy: { updatedAt: "desc" },
   });

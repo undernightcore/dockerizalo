@@ -1,6 +1,8 @@
 import { App, Build } from "@prisma/client";
 import { Response } from "express";
 import { randomUUID } from "node:crypto";
+import { prisma } from "./prisma";
+import { getContainerStatus } from "./docker";
 
 type SessionId = string;
 
@@ -10,7 +12,7 @@ const buildSubscribers = new Map<BuildId, Map<SessionId, Response>>();
 type AppId = string;
 const appSubscribers = new Map<AppId, Map<SessionId, Response>>();
 
-const buildsSubscribers = new Map<SessionId, Response>();
+const appBuildsSubscribers = new Map<AppId, Map<SessionId, Response>>();
 
 export function addBuildSubscriber(subscriber: Response, build: Build) {
   const buildMap =
@@ -36,10 +38,14 @@ export function addAppSubscriber(subscriber: Response, app: App) {
   return id;
 }
 
-export function addBuildsSubscriber(subscriber: Response) {
+export function addAppBuildsSubscriber(appId: string, subscriber: Response) {
+  const buildsMap =
+    appBuildsSubscribers.get(appId) ??
+    appBuildsSubscribers.set(appId, new Map()).get(appId);
+
   const id = randomUUID();
 
-  buildsSubscribers?.set(id, subscriber);
+  buildsMap?.set(id, subscriber);
 
   return id;
 }
@@ -52,11 +58,14 @@ export function removeAppSubscriber(id: string, app: App) {
   appSubscribers.get(app.id)?.delete(id);
 }
 
-export function removeBuildsSubscriber(id: string) {
-  buildsSubscribers.delete(id);
+export function removeAppBuildsSubscriber(appId: string, id: string) {
+  appBuildsSubscribers.get(appId)?.delete(id);
 }
 
-export function sendBuildEvent(build: Build) {
+export async function sendBuildEvent(buildId: string) {
+  const build = await prisma.build.findUnique({ where: { id: buildId } });
+  if (!build) return;
+
   const subscribers = [...(buildSubscribers.get(build.id)?.values() ?? [])];
 
   for (const subscriber of subscribers) {
@@ -64,18 +73,38 @@ export function sendBuildEvent(build: Build) {
   }
 }
 
-export function sendAppEvent(app: App & { status: string }) {
+export async function sendAppEvent(appId: string) {
+  const app = await prisma.app.findUnique({ where: { id: appId } });
+  if (!app) return;
+
+  const appWithStatus = {
+    ...app,
+    status: await getContainerStatus(`dockerizalo-${app.id}`),
+  };
+
   const subscribers = [...(appSubscribers.get(app.id)?.values() ?? [])];
 
   for (const subscriber of subscribers) {
-    subscriber.write(`data: ${JSON.stringify(app)}\n\n`);
+    subscriber.write(`data: ${JSON.stringify(appWithStatus)}\n\n`);
   }
 }
 
-export function sendBuildsEvent(
-  builds: Omit<Build, "log" | "updatedAt" | "appId">[]
-) {
-  const subscribers = [...(buildsSubscribers.values() ?? [])];
+export async function sendAppBuildsEvent(appId: string) {
+  const builds = await prisma.build.findMany({
+    select: {
+      id: true,
+      branch: true,
+      manual: true,
+      status: true,
+      createdAt: true,
+      finishedAt: true,
+    },
+    where: { appId },
+    take: 100,
+    orderBy: { updatedAt: "desc" },
+  });
+
+  const subscribers = [...(appBuildsSubscribers.get(appId)?.values() ?? [])];
 
   for (const subscriber of subscribers) {
     subscriber.write(`data: ${JSON.stringify(builds)}\n\n`);

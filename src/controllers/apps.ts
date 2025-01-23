@@ -113,10 +113,7 @@ export const updateApp: RequestHandler = async (req, res) => {
     where: { id: app.id },
   });
 
-  sendAppEvent({
-    ...updated,
-    status: await getContainerStatus(`dockerizalo-${app.id}`),
-  });
+  sendAppEvent(app.id);
 
   res.status(200).json(updated);
 };
@@ -165,14 +162,7 @@ export const startApp: RequestHandler = async (req, res, next) => {
 
   await startComposeStack(directory);
 
-  const updatedApp = await prisma.app.findUniqueOrThrow({
-    where: { id: req.params.appId },
-  });
-
-  sendAppEvent({
-    ...updatedApp,
-    status: await getContainerStatus(`dockerizalo-${req.params.appId}`),
-  });
+  sendAppEvent(app.id);
 
   res.status(200).json({ message: "App is now running" });
 };
@@ -198,14 +188,7 @@ export const stopApp: RequestHandler = async (req, res) => {
   const directory = await getOrCreateAppDirectory(app);
   await stopComposeStack(directory);
 
-  const updatedApp = await prisma.app.findUniqueOrThrow({
-    where: { id: req.params.appId },
-  });
-
-  sendAppEvent({
-    ...updatedApp,
-    status: await getContainerStatus(`dockerizalo-${req.params.appId}`),
-  });
+  sendAppEvent(app.id);
 
   res.status(200).json({ message: "App has stopped" });
 };

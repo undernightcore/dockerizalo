@@ -2,7 +2,7 @@ import { App, Build, EnvironmentVariable } from "@prisma/client";
 import { createTemporalDirectory } from "../services/fs";
 import { changeBranch, cloneRepo } from "../services/git";
 import { prisma } from "../services/prisma";
-import { sendBuildEvent, sendBuildsEvent } from "../services/realtime";
+import { sendAppBuildsEvent, sendBuildEvent } from "../services/realtime";
 import { buildImage } from "../services/docker";
 
 type BuildId = string;
@@ -69,7 +69,7 @@ const appendLogToBuild = async (
     data: { log: log.value },
   });
 
-  sendBuildEvent(updatedBuild);
+  sendBuildEvent(build.id);
 
   return updatedBuild.log;
 };
@@ -92,22 +92,8 @@ const finishBuild = async (
     data: { finishedAt: new Date(), status: success ? "SUCCESS" : "FAILED" },
   });
 
-  sendBuildEvent(updatedBuild);
-
-  const afterBuildsList = await prisma.build.findMany({
-    select: {
-      id: true,
-      branch: true,
-      manual: true,
-      status: true,
-      createdAt: true,
-      finishedAt: true,
-    },
-    where: { appId: build.appId },
-    take: 100,
-    orderBy: { updatedAt: "desc" },
-  });
-  sendBuildsEvent(afterBuildsList);
+  sendBuildEvent(build.id);
+  sendAppBuildsEvent(build.appId);
 
   return updatedBuild;
 };
