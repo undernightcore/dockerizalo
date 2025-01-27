@@ -13,7 +13,7 @@ export const listMounts: RequestHandler = async (req, res) => {
     return;
   }
 
-  const mounts = await prisma.environmentVariable.findMany({
+  const mounts = await prisma.bindMount.findMany({
     where: { appId: app.id },
   });
 
