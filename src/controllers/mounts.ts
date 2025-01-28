@@ -107,5 +107,5 @@ export const updateAllMounts: RequestHandler = async (req, res) => {
     }),
   ]);
 
-  res.status(200).json({ message: "All mounts have been created!" });
+  res.status(200).json({ message: "All mounts have been saved!" });
 };
