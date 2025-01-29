@@ -127,5 +127,5 @@ export const updateAllPorts: RequestHandler = async (req, res) => {
     }),
   ]);
 
-  res.status(200).json({ message: "All variables have been updated!" });
+  res.status(200).json({ message: "All ports have been updated!" });
 };
