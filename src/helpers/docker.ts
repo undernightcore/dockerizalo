@@ -4,7 +4,7 @@ import {
   EnvironmentVariable,
   PortMapping,
 } from "@prisma/client";
-import { dump } from "js-yaml";
+import { dump, load } from "js-yaml";
 
 export function createComposeConfiguration(
   build: Build,

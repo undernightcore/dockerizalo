@@ -8,6 +8,7 @@ import {
   getContainerLogs,
   getContainerStatus,
   isImageAvailable,
+  saveComposeConfiguration,
   startComposeStack,
   stopComposeStack,
 } from "../services/docker";
@@ -19,6 +20,7 @@ import {
 import { getAppDirectory, getOrCreateAppDirectory } from "../services/fs";
 import { createBuild } from "./builds";
 import { authenticateUser } from "../services/auth";
+import { createComposeConfiguration } from "../helpers/docker";
 
 export const listApps: RequestHandler = async (req, res) => {
   await authenticateUser(req);
@@ -92,14 +94,6 @@ export const updateApp: RequestHandler = async (req, res) => {
     return;
   }
 
-  const status = await getContainerStatus(`dockerizalo-${app.id}`);
-  if (status === "running") {
-    res
-      .status(400)
-      .json({ message: "You cannot edit an app that is currently running" });
-    return;
-  }
-
   const conflicting = await prisma.app.findUnique({
     where: { name: data.name, NOT: { id: app.id } },
   });
@@ -154,13 +148,47 @@ export const startApp: RequestHandler = async (req, res, next) => {
     return;
   }
 
+  const buildId = image.replace("dockerizalo-", "");
+  if (!buildId) {
+    await createBuild(req, res, next);
+    return;
+  }
+
+  const build = await prisma.build.findUnique({
+    where: { id: buildId },
+  });
+  if (!build) {
+    await createBuild(req, res, next);
+    return;
+  }
+
   const available = await isImageAvailable(image);
   if (!available) {
     await createBuild(req, res, next);
     return;
   }
 
-  await startComposeStack(directory);
+  const ports = await prisma.portMapping.findMany({ where: { appId: app.id } });
+  const mounts = await prisma.bindMount.findMany({ where: { appId: app.id } });
+  const variables = await prisma.environmentVariable.findMany({
+    where: { appId: app.id },
+  });
+
+  await saveComposeConfiguration(
+    createComposeConfiguration(build, ports, mounts, variables),
+    directory
+  );
+
+  try {
+    await startComposeStack(directory);
+  } catch (e) {
+    if ("err" in e) {
+      res.status(500).json({ message: `Error when running project: ${e.err}` });
+      return;
+    }
+
+    throw e;
+  }
 
   sendAppEvent(app.id);
 

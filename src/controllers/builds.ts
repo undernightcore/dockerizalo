@@ -27,7 +27,21 @@ export const createBuild: RequestHandler = async (req, res) => {
     data: { manual: true, branch: app.branch, log: "", appId: app.id },
   });
 
-  const variables = await prisma.environmentVariable.findMany({
+  let variables = await prisma.environmentVariable.findMany({
+    where: { appId: app.id },
+  });
+
+  res.status(201).json(build);
+
+  sendAppBuildsEvent(app.id);
+
+  await initBuild(
+    app,
+    build,
+    variables.filter((variable) => variable.build)
+  );
+
+  variables = await prisma.environmentVariable.findMany({
     where: { appId: app.id },
   });
 
@@ -39,11 +53,6 @@ export const createBuild: RequestHandler = async (req, res) => {
     where: { appId: app.id },
   });
 
-  res.status(201).json(build);
-
-  sendAppBuildsEvent(app.id);
-
-  await initBuild(app, build, variables);
   await initDeploy(app, build, ports, volumes, variables);
 
   sendAppEvent(app.id);
