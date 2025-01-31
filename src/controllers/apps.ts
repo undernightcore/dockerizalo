@@ -17,7 +17,11 @@ import {
   removeAppSubscriber,
   sendAppEvent,
 } from "../services/realtime";
-import { getAppDirectory, getOrCreateAppDirectory } from "../services/fs";
+import {
+  deleteAppDirectory,
+  getAppDirectory,
+  getOrCreateAppDirectory,
+} from "../services/fs";
 import { createBuild } from "./builds";
 import { authenticateUser } from "../services/auth";
 import { createComposeConfiguration } from "../helpers/docker";
@@ -79,6 +83,30 @@ export const createApp: RequestHandler = async (req, res) => {
 
   const app = await prisma.app.create({ data });
   res.status(201).json(app);
+};
+
+export const deleteApp: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
+  const app = await prisma.app.findUnique({
+    where: { id: req.params.appId },
+  });
+  if (!app) {
+    res.status(404).json({ message: "An app with that id does not exist" });
+    return;
+  }
+
+  const force = req.query.force === "true";
+
+  if (force) {
+    const directory = await getOrCreateAppDirectory(app);
+    await stopComposeStack(directory);
+    await deleteAppDirectory(app);
+  }
+
+  await prisma.app.delete({ where: { id: app.id } });
+
+  res.status(200).json({ message: "The app has been deleted..." });
 };
 
 export const updateApp: RequestHandler = async (req, res) => {
