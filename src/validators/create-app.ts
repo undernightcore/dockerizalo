@@ -12,4 +12,5 @@ export const createAppValidator = object({
   branch: string({
     required_error: "A branch is required for your app",
   }),
+  tokenId: nullable(string()),
 });

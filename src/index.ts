@@ -11,6 +11,7 @@ import { defaultErrorHandler } from "./handlers/default";
 import { authErrorHandler } from "./handlers/auth";
 import { authRouter } from "./routes/auth";
 import cors from "cors";
+import { tokensRouter } from "./routes/tokens";
 
 configDotenv();
 
@@ -22,6 +23,7 @@ app.use("/apps/:appId/ports", portsRouter);
 app.use("/apps/:appId/mounts", mountsRouter);
 app.use("/apps/:appId/variables", variablesRouter);
 app.use("/apps/:appId/builds", buildsRouter);
+app.use("/tokens", tokensRouter);
 app.use("/apps", appsRouter);
 app.use("/auth", authRouter);
 
