@@ -1,4 +1,4 @@
-import { App, Build, EnvironmentVariable } from "@prisma/client";
+import { App, Build, EnvironmentVariable, Token } from "@prisma/client";
 import { createTemporalDirectory } from "../services/fs";
 import { changeBranch, cloneRepo } from "../services/git";
 import { prisma } from "../services/prisma";
@@ -11,7 +11,8 @@ const runningBuilds = new Map<BuildId, AbortController>();
 export const initBuild = async (
   app: App,
   build: Build,
-  variables: EnvironmentVariable[]
+  variables: EnvironmentVariable[],
+  token?: Token
 ) => {
   const currentLog = { value: "" };
 
@@ -22,7 +23,7 @@ export const initBuild = async (
     await appendLogToBuild(currentLog, "Cloning repository!\n\n", build);
 
     const directory = await createTemporalDirectory();
-    await cloneRepo(app.repository, directory, abort.signal);
+    await cloneRepo(app.repository, directory, abort.signal, token);
     await changeBranch(build.branch, directory);
 
     await appendLogToBuild(

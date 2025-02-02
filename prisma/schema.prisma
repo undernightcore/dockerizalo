@@ -71,10 +71,11 @@ model Build {
 }
 
 model Token {
-  id    String @id @default(uuid())
-  name  String @unique
-  value String
-  apps  App[]
+  id       String @id @default(uuid())
+  name     String @unique
+  username String
+  password String
+  apps     App[]
 }
 
 enum Status {

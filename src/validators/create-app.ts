@@ -8,7 +8,7 @@ export const createAppValidator = object({
   description: optional(string()).or(nullable(string())),
   repository: string({
     required_error: "A repository is required for your app",
-  }),
+  }).url("This repository is not a valid URL"),
   branch: string({
     required_error: "A branch is required for your app",
   }),
