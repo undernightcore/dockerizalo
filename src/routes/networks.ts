@@ -7,7 +7,7 @@ import {
   updateNetwork,
 } from "../controllers/networks";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 router.get("/", listNetworks);
 router.post("/", createNetwork);
