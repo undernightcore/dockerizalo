@@ -25,6 +25,7 @@ import {
 import { createBuild } from "./builds";
 import { authenticateUser } from "../services/auth";
 import { createComposeConfiguration } from "../helpers/docker";
+import promiseRetry from "promise-retry";
 
 export const listApps: RequestHandler = async (req, res) => {
   await authenticateUser(req);
@@ -236,7 +237,7 @@ export const stopApp: RequestHandler = async (req, res) => {
   }
 
   const status = await getContainerStatus(`dockerizalo-${req.params.appId}`);
-  if (status !== "running") {
+  if (status !== "running" && status !== "restarting") {
     res.status(400).json({ message: "The app is not running" });
     return;
   }
@@ -262,7 +263,7 @@ export const listenAppLogs: RequestHandler = async (req, res) => {
   }
 
   const status = await getContainerStatus(`dockerizalo-${req.params.appId}`);
-  if (status !== "running") {
+  if (status !== "running" && status !== "restarting") {
     res.status(400).json({ message: "The app is not running" });
     return;
   }
@@ -277,11 +278,15 @@ export const listenAppLogs: RequestHandler = async (req, res) => {
     abort.abort();
   });
 
-  getContainerLogs(
-    `dockerizalo-${req.params.appId}`,
-    (progress) => {
-      res.write(`data: ${JSON.stringify(progress)}\n\n`);
-    },
-    abort.signal
+  promiseRetry(
+    (retry) =>
+      getContainerLogs(
+        `dockerizalo-${req.params.appId}`,
+        (progress) => {
+          res.write(`data: ${JSON.stringify(progress)}\n\n`);
+        },
+        abort.signal
+      ).catch((error) => (!abort.signal.aborted ? retry(error) : undefined)),
+    { forever: true, maxTimeout: 1000 }
   );
 };

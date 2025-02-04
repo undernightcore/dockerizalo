@@ -17,6 +17,7 @@ export const createBuild: RequestHandler = async (req, res) => {
 
   const app = await prisma.app.findUnique({
     where: { id: req.params.appId },
+    include: { token: true },
   });
   if (!app) {
     res.status(404).json({ message: "This app does not exist" });
@@ -38,7 +39,8 @@ export const createBuild: RequestHandler = async (req, res) => {
   await initBuild(
     app,
     build,
-    variables.filter((variable) => variable.build)
+    variables.filter((variable) => variable.build),
+    app.token ?? undefined
   );
 
   variables = await prisma.environmentVariable.findMany({

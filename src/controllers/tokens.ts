@@ -16,6 +16,14 @@ export const createToken: RequestHandler = async (req, res) => {
 
   const data = createTokenValidator.parse(req.body);
 
+  const conflicting = await prisma.token.findUnique({
+    where: { name: data.name },
+  });
+  if (conflicting) {
+    res.status(400).json({ message: "A token with that name already exists" });
+    return;
+  }
+
   const token = await prisma.token.create({ data });
 
   res.status(201).json(token);
@@ -47,6 +55,14 @@ export const updateToken: RequestHandler = async (req, res) => {
   });
   if (!token) {
     res.status(400).json({ message: "A token with that id does not exist" });
+    return;
+  }
+
+  const conflicting = await prisma.token.findUnique({
+    where: { name: data.name, NOT: { id: token.id } },
+  });
+  if (conflicting) {
+    res.status(400).json({ message: "A token with that name already exists" });
     return;
   }
 

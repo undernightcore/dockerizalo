@@ -15,17 +15,19 @@
     "jsonwebtoken": "^9.0.2",
     "pkgroll": "^2.6.0",
     "prisma": "^6.1.0",
+    "promise-retry": "^2.0.1",
     "simple-git": "^3.27.0",
     "tsx": "^4.19.2",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
+    "@types/cors": "^2.8.17",
     "@types/dockerode": "^3.3.32",
     "@types/express": "^5.0.0",
     "@types/js-yaml": "^4.0.9",
     "@types/jsonwebtoken": "^9.0.7",
-    "@types/cors": "^2.8.17"
+    "@types/promise-retry": "^1.1.6"
   },
   "scripts": {
     "start": "tsx watch src/index.ts",
