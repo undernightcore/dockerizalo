@@ -55,7 +55,11 @@ export const createBuild: RequestHandler = async (req, res) => {
     where: { appId: app.id },
   });
 
-  await initDeploy(app, build, ports, volumes, variables);
+  const networks = await prisma.network.findMany({
+    where: { appId: app.id },
+  });
+
+  await initDeploy(app, build, ports, volumes, variables, networks);
 
   sendAppEvent(app.id);
 };

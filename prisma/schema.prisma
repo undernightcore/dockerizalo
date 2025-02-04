@@ -26,6 +26,7 @@ model App {
   mounts      BindMount[]
   variables   EnvironmentVariable[]
   builds      Build[]
+  networks    Network[]
 }
 
 model PortMapping {
@@ -68,6 +69,16 @@ model Build {
   status     Status    @default(BUILDING)
   app        App       @relation(fields: [appId], references: [id], onDelete: Cascade)
   appId      String
+}
+
+model Network {
+  id       String  @id @default(uuid())
+  name     String
+  external Boolean
+  app      App     @relation(fields: [appId], references: [id])
+  appId    String
+
+  @@unique([name, appId])
 }
 
 model Token {

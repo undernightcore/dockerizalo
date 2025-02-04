@@ -2,6 +2,7 @@ import {
   BindMount,
   Build,
   EnvironmentVariable,
+  Network,
   PortMapping,
 } from "@prisma/client";
 import { dump, load } from "js-yaml";
@@ -10,7 +11,8 @@ export function createComposeConfiguration(
   build: Build,
   ports: PortMapping[],
   volumes: BindMount[],
-  variables: EnvironmentVariable[]
+  variables: EnvironmentVariable[],
+  networks: Network[]
 ) {
   const compose = {
     services: {
@@ -39,8 +41,21 @@ export function createComposeConfiguration(
               ),
             }
           : {}),
+        ...(networks.length
+          ? { networks: networks.map((network) => network.name) }
+          : {}),
       },
     },
+    ...(networks.length
+      ? {
+          networks: Object.fromEntries(
+            networks.map((network) => [
+              network.name,
+              { name: network.name, external: network.external },
+            ])
+          ),
+        }
+      : {}),
   };
 
   return dump(compose);

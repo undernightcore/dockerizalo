@@ -202,9 +202,12 @@ export const startApp: RequestHandler = async (req, res, next) => {
   const variables = await prisma.environmentVariable.findMany({
     where: { appId: app.id },
   });
+  const networks = await prisma.network.findMany({
+    where: { appId: app.id },
+  });
 
   await saveComposeConfiguration(
-    createComposeConfiguration(build, ports, mounts, variables),
+    createComposeConfiguration(build, ports, mounts, variables, networks),
     directory
   );
 
