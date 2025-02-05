@@ -1,4 +1,5 @@
-import { sign, verify } from "jsonwebtoken";
+import pkg from 'jsonwebtoken';
+const { sign, verify } = pkg;
 
 export function createToken(userId: number) {
   if (!process.env.APP_SECRET) {
