@@ -16,9 +16,13 @@ WORKDIR /usr/local/app
 COPY --from=build /usr/local/app/node_modules /usr/local/app/node_modules
 COPY --from=build /usr/local/app/dist /usr/local/app/dist
 COPY --from=build /usr/local/app/prisma /usr/local/app/prisma
-COPY --from=docker:latest /usr/local/bin/docker  /usr/local/bin/
 
 RUN apt-get update && apt-get install -y git
+
+RUN curl -fsSL https://download.docker.com/linux/static/stable/x86_64/docker-25.0.3.tgz | tar xz --strip-components=1 -C /usr/local/bin/ \
+    && mkdir -p /usr/local/lib/docker/cli-plugins \
+    && curl -fsSL "https://github.com/docker/compose/releases/latest/download/docker-compose-linux-x86_64" -o /usr/local/lib/docker/cli-plugins/docker-compose \
+    && chmod +x /usr/local/lib/docker/cli-plugins/docker-compose
 
 RUN npx prisma generate
 
