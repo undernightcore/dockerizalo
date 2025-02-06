@@ -30,4 +30,4 @@ RUN npx prisma generate
 
 EXPOSE 8080
 
-CMD npx prisma migrate deploy && npm run zombie && node dist/index.mjs
+CMD npx prisma migrate deploy && npx tsx dist/index.mjs && node dist/index.mjs
