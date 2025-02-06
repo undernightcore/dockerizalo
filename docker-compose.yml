@@ -1,0 +1,30 @@
+services:
+  proxy:
+    image: ghcr.io/undernightcore/dockerizalo-proxy:latest
+    ports:
+      - '8080:8080'
+    depends_on:
+      - api
+      - ui
+  api:
+    image: ghcr.io/undernightcore/dockerizalo:latest
+    volumes:
+      - ./apps:/data/dockerizalo
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      DATABASE_URL: postgresql://dockerizalo:dockerizalo@db:5432/dockerizalo?schema=public
+      APP_SECRET: hitthekeyboardwithyourheadhere
+    depends_on:
+      - db
+  ui:
+    image: ghcr.io/undernightcore/dockerizalo-ui:latest
+  db:
+    image: postgres
+    restart: unless-stopped
+    volumes:
+      - ./pg:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: dockerizalo
+      POSTGRES_USER: dockerizalo
+      POSTGRES_DB: dockerizalo
+
