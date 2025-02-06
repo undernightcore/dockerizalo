@@ -6,6 +6,7 @@ COPY ./package.json /usr/local/app/
 COPY ./package-lock.json /usr/local/app/
 COPY ./src /usr/local/app/src
 COPY ./prisma /usr/local/app/prisma
+COPY ./scripts /usr/local/app/scripts
 
 RUN npm install
 RUN npm run build
@@ -16,6 +17,7 @@ WORKDIR /usr/local/app
 COPY --from=build /usr/local/app/node_modules /usr/local/app/node_modules
 COPY --from=build /usr/local/app/dist /usr/local/app/dist
 COPY --from=build /usr/local/app/prisma /usr/local/app/prisma
+COPY --from=build /usr/local/app/scripts /usr/local/app/scripts
 
 RUN apt-get update && apt-get install -y git
 
@@ -28,4 +30,4 @@ RUN npx prisma generate
 
 EXPOSE 8080
 
-CMD npx prisma migrate deploy && node dist/index.mjs
+CMD npx prisma migrate deploy && npm run zombie && node dist/index.mjs

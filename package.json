@@ -31,7 +31,8 @@
   },
   "scripts": {
     "start": "tsx watch src/index.ts",
-    "build": "pkgroll ."
+    "build": "pkgroll .",
+    "zombie": "tsx scripts/zombie.ts"
   },
   "author": "",
   "license": "ISC"
