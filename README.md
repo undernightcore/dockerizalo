@@ -20,7 +20,7 @@ services:
   proxy:
     image: ghcr.io/undernightcore/dockerizalo-proxy:latest
     ports:
-      - "8080:8080"
+      - '8080:8080'
     depends_on:
       - api
       - ui
@@ -33,7 +33,8 @@ services:
       DATABASE_URL: postgresql://dockerizalo:dockerizalo@db:5432/dockerizalo?schema=public
       APP_SECRET: hitthekeyboardwithyourheadhere
     depends_on:
-      - db
+      db:
+        condition: service_healthy
   ui:
     image: ghcr.io/undernightcore/dockerizalo-ui:latest
   db:
@@ -45,6 +46,11 @@ services:
       POSTGRES_PASSWORD: dockerizalo
       POSTGRES_USER: dockerizalo
       POSTGRES_DB: dockerizalo
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 ```
 
 ## Screenshots
