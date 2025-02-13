@@ -47,19 +47,22 @@ export const createBuild: RequestHandler = async (req, res) => {
     where: { appId: app.id },
   });
 
-  const ports = await prisma.portMapping.findMany({
-    where: { appId: app.id },
-  });
+  const [ports, volumes, networks, labels] = await prisma.$transaction([
+    prisma.portMapping.findMany({
+      where: { appId: app.id },
+    }),
+    prisma.bindMount.findMany({
+      where: { appId: app.id },
+    }),
+    prisma.network.findMany({
+      where: { appId: app.id },
+    }),
+    prisma.label.findMany({
+      where: { appId: app.id },
+    }),
+  ]);
 
-  const volumes = await prisma.bindMount.findMany({
-    where: { appId: app.id },
-  });
-
-  const networks = await prisma.network.findMany({
-    where: { appId: app.id },
-  });
-
-  await initDeploy(app, build, ports, volumes, variables, networks);
+  await initDeploy(app, build, ports, volumes, variables, networks, labels);
 
   sendAppEvent(app.id);
 };

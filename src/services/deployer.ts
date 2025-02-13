@@ -3,6 +3,7 @@ import {
   BindMount,
   Build,
   EnvironmentVariable,
+  Label,
   Network,
   PortMapping,
 } from "@prisma/client";
@@ -21,7 +22,8 @@ export async function initDeploy(
   ports: PortMapping[],
   volumes: BindMount[],
   variables: EnvironmentVariable[],
-  networks: Network[]
+  networks: Network[],
+  labels: Label[]
 ) {
   const path = await getOrCreateAppDirectory(app);
   await stopComposeStack(path);
@@ -33,7 +35,8 @@ export async function initDeploy(
     ports,
     volumes,
     variables,
-    networks
+    networks,
+    labels
   );
   await saveComposeConfiguration(composeFile, path);
   await startComposeStack(path);

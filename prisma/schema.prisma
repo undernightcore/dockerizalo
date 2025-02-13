@@ -27,6 +27,7 @@ model App {
   variables   EnvironmentVariable[]
   builds      Build[]
   networks    Network[]
+  labels      Label[]
 }
 
 model PortMapping {
@@ -79,6 +80,16 @@ model Network {
   appId    String
 
   @@unique([name, appId])
+}
+
+model Label {
+  id    String @id @default(uuid())
+  key   String
+  value String
+  app   App    @relation(fields: [appId], references: [id])
+  appId String
+
+  @@unique([key, appId])
 }
 
 model Token {

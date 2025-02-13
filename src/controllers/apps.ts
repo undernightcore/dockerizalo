@@ -197,17 +197,34 @@ export const startApp: RequestHandler = async (req, res, next) => {
     return;
   }
 
-  const ports = await prisma.portMapping.findMany({ where: { appId: app.id } });
-  const mounts = await prisma.bindMount.findMany({ where: { appId: app.id } });
-  const variables = await prisma.environmentVariable.findMany({
-    where: { appId: app.id },
-  });
-  const networks = await prisma.network.findMany({
-    where: { appId: app.id },
-  });
+  const [ports, volumes, variables, networks, labels] =
+    await prisma.$transaction([
+      prisma.portMapping.findMany({
+        where: { appId: app.id },
+      }),
+      prisma.bindMount.findMany({
+        where: { appId: app.id },
+      }),
+      prisma.environmentVariable.findMany({
+        where: { appId: app.id },
+      }),
+      prisma.network.findMany({
+        where: { appId: app.id },
+      }),
+      prisma.label.findMany({
+        where: { appId: app.id },
+      }),
+    ]);
 
   await saveComposeConfiguration(
-    createComposeConfiguration(build, ports, mounts, variables, networks),
+    createComposeConfiguration(
+      build,
+      ports,
+      volumes,
+      variables,
+      networks,
+      labels
+    ),
     directory
   );
 
