@@ -13,6 +13,7 @@ import { authRouter } from "./routes/auth";
 import cors from "cors";
 import { tokensRouter } from "./routes/tokens";
 import { networksRouter } from "./routes/networks";
+import { labelsRouter } from "./routes/labels";
 
 configDotenv();
 
@@ -25,6 +26,7 @@ app.use("/apps/:appId/mounts", mountsRouter);
 app.use("/apps/:appId/variables", variablesRouter);
 app.use("/apps/:appId/builds", buildsRouter);
 app.use("/apps/:appId/networks", networksRouter);
+app.use("/apps/:appId/labels", labelsRouter);
 app.use("/tokens", tokensRouter);
 app.use("/apps", appsRouter);
 app.use("/auth", authRouter);
