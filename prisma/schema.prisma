@@ -76,7 +76,7 @@ model Network {
   id       String  @id @default(uuid())
   name     String
   external Boolean
-  app      App     @relation(fields: [appId], references: [id])
+  app      App     @relation(fields: [appId], references: [id], onDelete: Cascade)
   appId    String
 
   @@unique([name, appId])
@@ -86,7 +86,7 @@ model Label {
   id    String @id @default(uuid())
   key   String
   value String
-  app   App    @relation(fields: [appId], references: [id])
+  app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
   appId String
 
   @@unique([key, appId])
