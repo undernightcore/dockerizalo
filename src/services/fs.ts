@@ -7,6 +7,12 @@ export function createTemporalDirectory() {
   return mkdtemp(join(tmpdir(), "dockerizate-"));
 }
 
+export function deleteTemporalDirectory(directory: string) {
+  return readdir(directory)
+    .then(() => rm(directory, { recursive: true, force: true }))
+    .catch();
+}
+
 export async function getAppDirectory(app: App) {
   const dir = join(process.env.APPS_DIR ?? "/data/dockerizalo", app.id);
 

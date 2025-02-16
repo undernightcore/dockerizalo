@@ -12,5 +12,11 @@ export const createAppValidator = object({
   branch: string({
     required_error: "A branch is required for your app",
   }),
+  contextPath: optional(
+    string().regex(/^(?!$)(\/(?!\.{1,2}(?:\/|$))[^\s\/]+)*\/?$/)
+  ).default("/"),
+  filePath: optional(
+    string().regex(/^(?!$)(\/(?!\.{1,2}(?:\/|$))[^\s\/]+)*\/?$/)
+  ).default("/Dockerfile"),
   tokenId: nullable(string()),
 });
