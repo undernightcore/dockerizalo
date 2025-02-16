@@ -13,10 +13,10 @@ export const createAppValidator = object({
     required_error: "A branch is required for your app",
   }),
   contextPath: optional(
-    string().regex(new RegExp("^(?!$)(/(?!.{1,2}(?:/|$))[^s/]+)*/?$"))
+    string().regex(/^(?!$)(\/(?!\.{1,2}(?:\/|$))[^\s\/]+)*\/?$/)
   ).default("/"),
   filePath: optional(
-    string().regex(new RegExp("^(?!$)(/(?!.{1,2}(?:/|$))[^s/]+)*/?$"))
+    string().regex(/^(?!$)(\/(?!\.{1,2}(?:\/|$))[^\s\/]+)*\/?$/)
   ).default("/Dockerfile"),
   tokenId: nullable(string()),
 });
