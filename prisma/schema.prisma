@@ -20,6 +20,8 @@ model App {
   description String?
   repository  String
   branch      String
+  contextPath String                @default("/")
+  filePath    String                @default("/Dockerfile")
   token       Token?                @relation(fields: [tokenId], references: [id], onDelete: SetNull)
   tokenId     String?
   ports       PortMapping[]

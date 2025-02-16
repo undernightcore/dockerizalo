@@ -1,9 +1,13 @@
 import { App, Build, EnvironmentVariable, Token } from "@prisma/client";
-import { createTemporalDirectory } from "../services/fs";
+import {
+  createTemporalDirectory,
+  deleteTemporalDirectory,
+} from "../services/fs";
 import { changeBranch, cloneRepo } from "../services/git";
 import { prisma } from "../services/prisma";
 import { sendAppBuildsEvent, sendBuildEvent } from "../services/realtime";
 import { buildImage } from "../services/docker";
+import { join } from "node:path";
 
 type BuildId = string;
 const runningBuilds = new Map<BuildId, AbortController>();
@@ -19,10 +23,12 @@ export const initBuild = async (
   const abort = new AbortController();
   runningBuilds.set(build.id, abort);
 
+  let directory: string | undefined = undefined;
+
   try {
     await appendLogToBuild(currentLog, "Cloning repository!\n\n", build);
 
-    const directory = await createTemporalDirectory();
+    directory = await createTemporalDirectory();
     await cloneRepo(app.repository, directory, abort.signal, token);
     await changeBranch(build.branch, directory);
 
@@ -34,22 +40,24 @@ export const initBuild = async (
 
     await buildImage(
       `dockerizalo-${build.id}`,
-      directory,
+      join(directory, app.contextPath),
+      join(directory, app.filePath),
       variables,
-      (progress) => {
-        if (progress?.stream) {
-          appendLogToBuild(currentLog, progress.stream, build);
-        }
-      },
+      (progress) => appendLogToBuild(currentLog, progress, build),
       abort.signal
     );
+
+    await deleteTemporalDirectory(directory);
 
     runningBuilds.delete(build.id);
     await finishBuild(currentLog, true, build);
   } catch (e) {
-    appendLogToBuild(currentLog, e.message, build);
+    if (directory) await deleteTemporalDirectory(directory);
+    if (e.message) appendLogToBuild(currentLog, e.message, build);
+
     runningBuilds.delete(build.id);
     await finishBuild(currentLog, false, build);
+
     throw e;
   }
 };

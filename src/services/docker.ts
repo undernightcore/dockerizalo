@@ -1,6 +1,7 @@
 import { EnvironmentVariable } from "@prisma/client";
 import { downAll, ps, upAll } from "docker-compose";
 import Dockerode from "dockerode";
+import { spawn } from "node:child_process";
 import { load } from "js-yaml";
 import { readdir, stat, writeFile, readFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -10,36 +11,37 @@ const docker = new Dockerode({ socketPath: "/var/run/docker.sock" });
 
 export async function buildImage(
   tag: string,
-  path: string,
+  contextPath: string,
+  filePath: string,
   variables: EnvironmentVariable[],
   progress: (status: any) => void,
   abort: AbortSignal
 ) {
-  const stream = await docker.buildImage(
-    {
-      context: path,
-      src: await readdir(path, { recursive: true }),
-    },
-    {
-      t: tag,
-      abortSignal: abort,
-      buildargs: variables.reduce(
-        (acc, variable) => ({
-          ...acc,
-          [variable.key]: variable.value,
-        }),
-        {}
-      ),
-    }
+  const process = spawn(
+    "docker",
+    [
+      "build",
+      "-t",
+      tag,
+      "-f",
+      filePath,
+      ...(variables.length
+        ? [
+            "--build-arg",
+            ...variables.map(({ key, value }) => `${key}=${value}`),
+          ]
+        : []),
+      contextPath,
+    ],
+    { signal: abort, shell: false }
   );
 
-  return new Promise((resolve, reject) => {
-    docker.modem.followProgress(
-      stream,
-      (err, res) => (err ? reject(err) : resolve(res)),
-      progress
-    );
-  });
+  process.stdin.on("data", (data) => progress(data.toString()));
+  process.stderr.on("data", (data) => progress(data.toString()));
+
+  return new Promise((resolve, reject) =>
+    process.on("close", (code) => (code ? reject("") : resolve("")))
+  );
 }
 
 export async function startComposeStack(path: string) {
