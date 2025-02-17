@@ -36,7 +36,7 @@ export async function buildImage(
     { signal: abort, shell: false }
   );
 
-  process.stdin.on("data", (data) => progress(data.toString()));
+  process.stdout.on("data", (data) => progress(data.toString()));
   process.stderr.on("data", (data) => progress(data.toString()));
 
   return new Promise((resolve, reject) =>
