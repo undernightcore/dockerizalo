@@ -36,7 +36,7 @@ export async function buildImage(
     { signal: abort, shell: false }
   );
 
-  process.stdout.on("data", (data) => progress(data.toString()));
+  // Docker logs to stderr, surprising, I know
   process.stderr.on("data", (data) => progress(data.toString()));
 
   return new Promise((resolve, reject) =>
