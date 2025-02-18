@@ -17,7 +17,7 @@ export async function buildImage(
   progress: (status: any) => void,
   abort: AbortSignal
 ) {
-  const process = spawn(
+  const build = spawn(
     "docker",
     [
       "build",
@@ -37,11 +37,12 @@ export async function buildImage(
   );
 
   // Docker logs to stderr, surprising, I know
-  process.stderr.on("data", (data) => progress(data.toString()));
+  build.stderr.on("data", (data) => progress(data.toString()));
 
-  return new Promise((resolve, reject) =>
-    process.on("close", (code) => (code ? reject("") : resolve("")))
-  );
+  return new Promise((resolve, reject) => {
+    build.on("error", () => {});
+    build.on("close", (code) => (code ? reject("") : resolve("")));
+  });
 }
 
 export async function startComposeStack(path: string) {
@@ -89,24 +90,19 @@ export async function getAllContainersStatus() {
   return containerMap;
 }
 
-export async function getContainerLogs(
+export function getContainerLogs(
   name: string,
   progress: (status: any) => void,
   abort: AbortSignal
 ) {
-  const currentLog = await docker.getContainer(name).logs({
-    stdout: true,
-    stderr: true,
-  });
+  const logs = spawn("docker", ["logs", name, "-f"], { signal: abort });
 
-  progress(currentLog.toString());
+  logs.stdout.on("data", (value) => progress(value.toString()));
+  logs.stderr.on("data", (value) => progress(value.toString()));
 
-  const stream = await docker
-    .getContainer(name)
-    .attach({ stream: true, stdout: true, stderr: true, abortSignal: abort });
-
-  stream.setEncoding("utf-8");
-  stream.on("data", (value) => progress(value.toString()));
+  return new Promise((resolve, reject) =>
+    logs.on("error", () => (abort.aborted ? resolve("") : reject("")))
+  );
 }
 
 export async function saveComposeConfiguration(config: string, path: string) {
