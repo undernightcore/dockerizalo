@@ -6,8 +6,7 @@ export const createRepositoryAppValidator = object({
     invalid_type_error: "A name must be a valid string",
   }).min(1, "A name is required for your app"),
   mode: literal("REPOSITORY", {
-    required_error: "A mode for your app is required",
-    invalid_type_error: "The app mode must be REPOSITORY",
+    errorMap: () => ({ message: "The app mode must be REPOSITORY" }),
   }),
   description: optional(nullable(string())).default(null),
   repository: string({
