@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 import { prisma } from "../services/prisma";
-import { createPortValidator } from "../validators/create-port";
-import { updateAllPortsValidator } from "../validators/update-all.ports";
 import { authenticateUser } from "../services/auth";
+import { createPortValidator } from "../validators/port/create-port";
+import { updateAllPortsValidator } from "../validators/port/update-all.ports";
 
 export const listPorts: RequestHandler = async (req, res) => {
   await authenticateUser(req);

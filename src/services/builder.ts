@@ -8,12 +8,14 @@ import { prisma } from "../services/prisma";
 import { sendAppBuildsEvent, sendBuildEvent } from "../services/realtime";
 import { buildImage } from "../services/docker";
 import { join } from "node:path";
+import z from "zod";
+import { createRepositoryAppValidator } from "../validators/app/create-repository-app";
 
 type BuildId = string;
 const runningBuilds = new Map<BuildId, AbortController>();
 
 export const initBuild = async (
-  app: App,
+  app: z.infer<typeof createRepositoryAppValidator>,
   build: Build,
   variables: EnvironmentVariable[],
   token?: Token

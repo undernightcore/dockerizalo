@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 import { authenticateUser } from "../services/auth";
 import { prisma } from "../services/prisma";
-import { createNetworkValidator } from "../validators/create-network";
-import { updateAllNetworksValidator } from "../validators/update-all-networks";
+import { createNetworkValidator } from "../validators/network/create-network";
+import { updateAllNetworksValidator } from "../validators/network/update-all-networks";
 
 export const listNetworks: RequestHandler = async (req, res) => {
   await authenticateUser(req);

@@ -18,10 +18,12 @@ model App {
   id          String                @id @default(uuid())
   name        String                @unique
   description String?
-  repository  String
-  branch      String
-  contextPath String                @default("/")
-  filePath    String                @default("/Dockerfile")
+  mode        Mode                  @default(REPOSITORY)
+  repository  String?
+  image       String?
+  branch      String?
+  contextPath String?               @default("/")
+  filePath    String?               @default("/Dockerfile")
   token       Token?                @relation(fields: [tokenId], references: [id], onDelete: SetNull)
   tokenId     String?
   ports       PortMapping[]
@@ -106,4 +108,9 @@ enum Status {
   BUILDING
   FAILED
   SUCCESS
+}
+
+enum Mode {
+  REPOSITORY
+  IMAGE
 }

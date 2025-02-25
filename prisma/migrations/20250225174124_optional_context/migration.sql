@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "App" ALTER COLUMN "contextPath" DROP NOT NULL,
+ALTER COLUMN "filePath" DROP NOT NULL;

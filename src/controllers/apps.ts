@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { createAppValidator } from "../validators/create-app";
+import { createAppValidator } from "../validators/app/create-app";
 import { prisma } from "../services/prisma";
 import {
   getAllContainersStatus,
@@ -26,6 +26,7 @@ import { createBuild } from "./builds";
 import { authenticateUser } from "../services/auth";
 import { createComposeConfiguration } from "../helpers/docker";
 import promiseRetry from "promise-retry";
+import { initDeploy } from "../services/deployer";
 
 export const listApps: RequestHandler = async (req, res) => {
   await authenticateUser(req);
@@ -159,6 +160,40 @@ export const startApp: RequestHandler = async (req, res, next) => {
     return;
   }
 
+  const [ports, volumes, variables, networks, labels] =
+    await prisma.$transaction([
+      prisma.portMapping.findMany({
+        where: { appId: app.id },
+      }),
+      prisma.bindMount.findMany({
+        where: { appId: app.id },
+      }),
+      prisma.environmentVariable.findMany({
+        where: { appId: app.id },
+      }),
+      prisma.network.findMany({
+        where: { appId: app.id },
+      }),
+      prisma.label.findMany({
+        where: { appId: app.id },
+      }),
+    ]);
+
+  // If the app comes with a prebuilt image there is no need to build
+  if (app.image) {
+    await initDeploy(
+      app,
+      app.image,
+      ports,
+      volumes,
+      variables,
+      networks,
+      labels
+    );
+    res.status(200).json({ message: "App is now running" });
+    return;
+  }
+
   const directory = await getAppDirectory(app);
   if (!directory) {
     await createBuild(req, res, next);
@@ -197,28 +232,10 @@ export const startApp: RequestHandler = async (req, res, next) => {
     return;
   }
 
-  const [ports, volumes, variables, networks, labels] =
-    await prisma.$transaction([
-      prisma.portMapping.findMany({
-        where: { appId: app.id },
-      }),
-      prisma.bindMount.findMany({
-        where: { appId: app.id },
-      }),
-      prisma.environmentVariable.findMany({
-        where: { appId: app.id },
-      }),
-      prisma.network.findMany({
-        where: { appId: app.id },
-      }),
-      prisma.label.findMany({
-        where: { appId: app.id },
-      }),
-    ]);
-
   await saveComposeConfiguration(
     createComposeConfiguration(
-      build,
+      app,
+      `dockerizalo-${build.id}`,
       ports,
       volumes,
       variables,

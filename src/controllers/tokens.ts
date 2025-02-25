@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { authenticateUser } from "../services/auth";
 import { prisma } from "../services/prisma";
-import { createTokenValidator } from "../validators/create-token";
+import { createTokenValidator } from "../validators/token/create-token";
 
 export const listTokens: RequestHandler = async (req, res) => {
   await authenticateUser(req);

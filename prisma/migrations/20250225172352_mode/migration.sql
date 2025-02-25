@@ -1,0 +1,5 @@
+-- CreateEnum
+CREATE TYPE "Mode" AS ENUM ('REPOSITORY', 'IMAGE');
+
+-- AlterTable
+ALTER TABLE "App" ADD COLUMN     "mode" "Mode" NOT NULL DEFAULT 'REPOSITORY';

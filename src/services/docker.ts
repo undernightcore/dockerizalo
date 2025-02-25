@@ -26,10 +26,10 @@ export async function buildImage(
       "-f",
       filePath,
       ...(variables.length
-        ? [
+        ? variables.flatMap(({ key, value }) => [
             "--build-arg",
-            ...variables.map(({ key, value }) => `${key}=${value}`),
-          ]
+            `${key}=${value}`,
+          ])
         : []),
       contextPath,
     ],

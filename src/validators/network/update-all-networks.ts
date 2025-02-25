@@ -1,5 +1,5 @@
 import { array } from "zod";
-import { toSet } from "../utils/array";
+import { toSet } from "../../utils/array";
 import { createNetworkValidator } from "./create-network";
 
 export const updateAllNetworksValidator = array(createNetworkValidator).refine(

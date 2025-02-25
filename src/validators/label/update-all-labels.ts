@@ -1,5 +1,5 @@
 import { array } from "zod";
-import { toSet } from "../utils/array";
+import { toSet } from "../../utils/array";
 import { createLabelValidator } from "./create-labels";
 
 export const updateAllLabelsValidator = array(createLabelValidator).refine(

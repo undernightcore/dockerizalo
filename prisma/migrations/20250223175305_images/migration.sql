@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "App" ADD COLUMN     "image" TEXT,
+ALTER COLUMN "repository" DROP NOT NULL,
+ALTER COLUMN "branch" DROP NOT NULL;

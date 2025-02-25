@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 import { prisma } from "../services/prisma";
-import { createMountValidator } from "../validators/create-mount";
-import { updateAllMountsValidator } from "../validators/update-all-mounts";
 import { authenticateUser } from "../services/auth";
+import { createMountValidator } from "../validators/mount/create-mount";
+import { updateAllMountsValidator } from "../validators/mount/update-all-mounts";
 
 export const listMounts: RequestHandler = async (req, res) => {
   await authenticateUser(req);

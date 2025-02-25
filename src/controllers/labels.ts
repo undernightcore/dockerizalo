@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
 import { authenticateUser } from "../services/auth";
 import { prisma } from "../services/prisma";
-import { createLabelValidator } from "../validators/create-labels";
-import { updateAllLabelsValidator } from "../validators/update-all-labels";
+import { createLabelValidator } from "../validators/label/create-labels";
+import { updateAllLabelsValidator } from "../validators/label/update-all-labels";
 
 export const listLabels: RequestHandler = async (req, res) => {
   await authenticateUser(req);

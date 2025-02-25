@@ -11,6 +11,7 @@ import {
 import { abortBuild, initBuild } from "../services/builder";
 import { initDeploy } from "../services/deployer";
 import { authenticateUser } from "../services/auth";
+import { createRepositoryAppValidator } from "../validators/app/create-repository-app";
 
 export const createBuild: RequestHandler = async (req, res) => {
   await authenticateUser(req);
@@ -19,13 +20,21 @@ export const createBuild: RequestHandler = async (req, res) => {
     where: { id: req.params.appId },
     include: { token: true },
   });
+
   if (!app) {
     res.status(404).json({ message: "This app does not exist" });
     return;
   }
 
+  const repositoryApp = createRepositoryAppValidator.parse(app);
+
   const build = await prisma.build.create({
-    data: { manual: true, branch: app.branch, log: "", appId: app.id },
+    data: {
+      manual: true,
+      branch: repositoryApp.branch,
+      log: "",
+      appId: app.id,
+    },
   });
 
   let variables = await prisma.environmentVariable.findMany({
@@ -37,7 +46,7 @@ export const createBuild: RequestHandler = async (req, res) => {
   sendAppBuildsEvent(app.id);
 
   await initBuild(
-    app,
+    repositoryApp,
     build,
     variables.filter((variable) => variable.build),
     app.token ?? undefined
@@ -62,7 +71,15 @@ export const createBuild: RequestHandler = async (req, res) => {
     }),
   ]);
 
-  await initDeploy(app, build, ports, volumes, variables, networks, labels);
+  await initDeploy(
+    app,
+    `dockerizalo-${build.id}`,
+    ports,
+    volumes,
+    variables,
+    networks,
+    labels
+  );
 
   sendAppEvent(app.id);
 };

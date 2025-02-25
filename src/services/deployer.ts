@@ -18,7 +18,7 @@ import { sendAppEvent } from "./realtime";
 
 export async function initDeploy(
   app: App,
-  build: Build,
+  image: string,
   ports: PortMapping[],
   volumes: BindMount[],
   variables: EnvironmentVariable[],
@@ -31,7 +31,8 @@ export async function initDeploy(
   await sendAppEvent(app.id);
 
   const composeFile = createComposeConfiguration(
-    build,
+    app,
+    image,
     ports,
     volumes,
     variables,

@@ -1,6 +1,6 @@
 import {
+  App,
   BindMount,
-  Build,
   EnvironmentVariable,
   Label,
   Network,
@@ -9,7 +9,8 @@ import {
 import { dump } from "js-yaml";
 
 export function createComposeConfiguration(
-  build: Build,
+  app: App,
+  image: string,
   ports: PortMapping[],
   volumes: BindMount[],
   variables: EnvironmentVariable[],
@@ -19,8 +20,8 @@ export function createComposeConfiguration(
   const compose = {
     services: {
       app: {
-        image: `dockerizalo-${build.id}`,
-        container_name: `dockerizalo-${build.appId}`,
+        image,
+        container_name: `dockerizalo-${app.id}`,
         restart: "unless-stopped",
         ...(ports.length
           ? { ports: ports.map((port) => `${port.external}:${port.internal}`) }

@@ -1,6 +1,6 @@
 import { array } from "zod";
 import { createVariableValidator } from "./create-variable";
-import { toSet } from "../utils/array";
+import { toSet } from "../../utils/array";
 
 export const updateAllVariablesValidator = array(
   createVariableValidator

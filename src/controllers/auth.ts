@@ -1,10 +1,10 @@
-import e, { RequestHandler, request } from "express";
-import { registerUserValidator } from "../validators/register-user";
+import { RequestHandler, request } from "express";
 import { prisma } from "../services/prisma";
 import { authenticateUser } from "../services/auth";
 import { hashPassword, isValidPassword } from "../helpers/bcrypt";
 import { createToken } from "../helpers/jwt";
-import { loginUserValidator } from "../validators/login-user";
+import { registerUserValidator } from "../validators/user/register-user";
+import { loginUserValidator } from "../validators/user/login-user";
 
 export const registerUser: RequestHandler = async (req, res) => {
   const data = registerUserValidator.parse(req.body);

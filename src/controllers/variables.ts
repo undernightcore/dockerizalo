@@ -1,8 +1,8 @@
 import { RequestHandler } from "express";
-import { createVariableValidator } from "../validators/create-variable";
 import { prisma } from "../services/prisma";
-import { updateAllVariablesValidator } from "../validators/update-all-variables";
 import { authenticateUser } from "../services/auth";
+import { createVariableValidator } from "../validators/variable/create-variable";
+import { updateAllVariablesValidator } from "../validators/variable/update-all-variables";
 
 export const listVariables: RequestHandler = async (req, res) => {
   await authenticateUser(req);
