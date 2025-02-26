@@ -9,7 +9,6 @@ import {
   removeAppBuildsSubscriber,
   sendAppBuildsEvent,
 } from "../services/realtime/app-builds";
-import { sendAppEvent } from "../services/realtime/app";
 import {
   addBuildSubscriber,
   removeBuildSubscriber,
@@ -47,12 +46,17 @@ export const createBuild: RequestHandler = async (req, res) => {
 
   sendAppBuildsEvent(app.id);
 
-  initBuild(
-    repositoryApp,
-    build,
-    variables.filter((variable) => variable.build),
-    app.token ?? undefined
-  ).catch(() => console.error("[ERROR] Build failed asyncronously"));
+  try {
+    await initBuild(
+      repositoryApp,
+      build,
+      variables.filter((variable) => variable.build),
+      app.token ?? undefined
+    );
+  } catch {
+    console.error("[ERROR] Build failed asyncronously");
+    return;
+  }
 
   variables = await prisma.environmentVariable.findMany({
     where: { appId: app.id },
@@ -82,8 +86,6 @@ export const createBuild: RequestHandler = async (req, res) => {
     networks,
     labels
   ).catch(() => console.error("[ERROR] Deployment failed asyncronously"));
-
-  sendAppEvent(app.id);
 };
 
 export const listenBuilds: RequestHandler = async (req, res) => {
