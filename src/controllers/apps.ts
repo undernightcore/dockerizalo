@@ -196,7 +196,15 @@ export const startApp: RequestHandler = async (req, res, next) => {
 
   // If the app comes with a prebuilt image there is no need to build
   if (app.image) {
-    initDeploy(app, app.image, ports, volumes, variables, networks, labels);
+    initDeploy(
+      app,
+      app.image,
+      ports,
+      volumes,
+      variables,
+      networks,
+      labels
+    ).catch(() => console.error("[ERROR] Deployment failed asyncronously"));
     res.status(200).json({ message: "App is now starting..." });
     return;
   }
@@ -247,7 +255,7 @@ export const startApp: RequestHandler = async (req, res, next) => {
     variables,
     networks,
     labels
-  );
+  ).catch(() => console.error("[ERROR] Deployment failed asyncronously"));
   res.status(200).json({ message: "App is now starting..." });
 };
 

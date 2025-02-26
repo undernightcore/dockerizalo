@@ -47,12 +47,12 @@ export const createBuild: RequestHandler = async (req, res) => {
 
   sendAppBuildsEvent(app.id);
 
-  await initBuild(
+  initBuild(
     repositoryApp,
     build,
     variables.filter((variable) => variable.build),
     app.token ?? undefined
-  );
+  ).catch(() => console.error("[ERROR] Build failed asyncronously"));
 
   variables = await prisma.environmentVariable.findMany({
     where: { appId: app.id },
@@ -73,7 +73,7 @@ export const createBuild: RequestHandler = async (req, res) => {
     }),
   ]);
 
-  await initDeploy(
+  initDeploy(
     app,
     `dockerizalo-${build.id}`,
     ports,
@@ -81,7 +81,7 @@ export const createBuild: RequestHandler = async (req, res) => {
     variables,
     networks,
     labels
-  );
+  ).catch(() => console.error("[ERROR] Deployment failed asyncronously"));
 
   sendAppEvent(app.id);
 };
