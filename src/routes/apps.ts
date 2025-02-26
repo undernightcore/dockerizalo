@@ -4,6 +4,7 @@ import {
   deleteApp,
   listApps,
   listenApp,
+  listenAppDeploymentLogs,
   listenAppLogs,
   startApp,
   stopApp,
@@ -15,6 +16,7 @@ const router = Router();
 router.get("/", listApps);
 router.get("/:appId/realtime", listenApp);
 router.get("/:appId/logs/realtime", listenAppLogs);
+router.get("/:appId/deployment/logs/realtime", listenAppDeploymentLogs);
 router.post("/", createApp);
 router.put("/:appId", updateApp);
 router.delete("/:appId", deleteApp);

@@ -13,11 +13,6 @@ import {
   stopComposeStack,
 } from "../services/docker";
 import {
-  addAppSubscriber,
-  removeAppSubscriber,
-  sendAppEvent,
-} from "../services/realtime";
-import {
   deleteAppDirectory,
   getAppDirectory,
   getOrCreateAppDirectory,
@@ -26,7 +21,20 @@ import { createBuild } from "./builds";
 import { authenticateUser } from "../services/auth";
 import { createComposeConfiguration } from "../helpers/docker";
 import promiseRetry from "promise-retry";
-import { initDeploy } from "../services/deployer";
+import {
+  getDeploymentLogs,
+  initDeploy,
+  isDeploying,
+} from "../services/deployer";
+import {
+  addAppSubscriber,
+  removeAppSubscriber,
+  sendAppEvent,
+} from "../services/realtime/app";
+import {
+  addDeploymentSubscriber,
+  removeDeploymentSubscriber,
+} from "../services/realtime/deploy";
 
 export const listApps: RequestHandler = async (req, res) => {
   await authenticateUser(req);
@@ -160,6 +168,13 @@ export const startApp: RequestHandler = async (req, res, next) => {
     return;
   }
 
+  if (isDeploying(app.id)) {
+    res
+      .status(400)
+      .json({ message: "The app is currently deploying. Please wait." });
+    return;
+  }
+
   const [ports, volumes, variables, networks, labels] =
     await prisma.$transaction([
       prisma.portMapping.findMany({
@@ -181,16 +196,8 @@ export const startApp: RequestHandler = async (req, res, next) => {
 
   // If the app comes with a prebuilt image there is no need to build
   if (app.image) {
-    await initDeploy(
-      app,
-      app.image,
-      ports,
-      volumes,
-      variables,
-      networks,
-      labels
-    );
-    res.status(200).json({ message: "App is now running" });
+    initDeploy(app, app.image, ports, volumes, variables, networks, labels);
+    res.status(200).json({ message: "App is now starting..." });
     return;
   }
 
@@ -232,33 +239,16 @@ export const startApp: RequestHandler = async (req, res, next) => {
     return;
   }
 
-  await saveComposeConfiguration(
-    createComposeConfiguration(
-      app,
-      `dockerizalo-${build.id}`,
-      ports,
-      volumes,
-      variables,
-      networks,
-      labels
-    ),
-    directory
+  initDeploy(
+    app,
+    `dockerizalo-${build.id}`,
+    ports,
+    volumes,
+    variables,
+    networks,
+    labels
   );
-
-  try {
-    await startComposeStack(directory);
-  } catch (e) {
-    if ("err" in e) {
-      res.status(500).json({ message: `Error when running project: ${e.err}` });
-      return;
-    }
-
-    throw e;
-  }
-
-  sendAppEvent(app.id);
-
-  res.status(200).json({ message: "App is now running" });
+  res.status(200).json({ message: "App is now starting..." });
 };
 
 export const stopApp: RequestHandler = async (req, res) => {
@@ -276,6 +266,13 @@ export const stopApp: RequestHandler = async (req, res) => {
   const status = await getContainerStatus(`dockerizalo-${req.params.appId}`);
   if (status !== "running" && status !== "restarting") {
     res.status(400).json({ message: "The app is not running" });
+    return;
+  }
+
+  if (isDeploying(app.id)) {
+    res
+      .status(400)
+      .json({ message: "The app is currently deploying. Please wait." });
     return;
   }
 
@@ -326,4 +323,29 @@ export const listenAppLogs: RequestHandler = async (req, res) => {
       ).catch((error) => (!abort.signal.aborted ? retry(error) : undefined)),
     { forever: true, maxTimeout: 1000 }
   );
+};
+
+export const listenAppDeploymentLogs: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
+  const app = await prisma.app.findUnique({
+    where: { id: req.params.appId },
+  });
+
+  if (!app) {
+    res.status(404).json({ message: "An app with that id does not exist" });
+    return;
+  }
+
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const id = addDeploymentSubscriber(res, app);
+  res.on("close", () => {
+    removeDeploymentSubscriber(id, app);
+  });
+
+  res.write(`data: ${JSON.stringify(getDeploymentLogs(app.id) ?? null)}\n\n`);
 };

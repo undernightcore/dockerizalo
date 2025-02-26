@@ -1,7 +1,6 @@
 import {
   App,
   BindMount,
-  Build,
   EnvironmentVariable,
   Label,
   Network,
@@ -14,7 +13,12 @@ import {
   startComposeStack,
   stopComposeStack,
 } from "./docker";
-import { sendAppEvent } from "./realtime";
+import { sendAppEvent } from "./realtime/app";
+import { sendDeploymentEvent } from "./realtime/deploy";
+
+type AppId = string;
+type Logs = string;
+const currentDeployments: Map<AppId, Logs> = new Map();
 
 export async function initDeploy(
   app: App,
@@ -25,22 +29,47 @@ export async function initDeploy(
   networks: Network[],
   labels: Label[]
 ) {
-  const path = await getOrCreateAppDirectory(app);
-  await stopComposeStack(path);
+  try {
+    addLogsToDeployment(app.id, "[INFO] Deployment has started!\n");
 
-  await sendAppEvent(app.id);
+    const path = await getOrCreateAppDirectory(app);
 
-  const composeFile = createComposeConfiguration(
-    app,
-    image,
-    ports,
-    volumes,
-    variables,
-    networks,
-    labels
-  );
-  await saveComposeConfiguration(composeFile, path);
-  await startComposeStack(path);
+    await stopComposeStack(path);
+    await sendAppEvent(app.id);
 
-  await sendAppEvent(app.id);
+    const composeFile = createComposeConfiguration(
+      app,
+      image,
+      ports,
+      volumes,
+      variables,
+      networks,
+      labels
+    );
+    await saveComposeConfiguration(composeFile, path);
+
+    addLogsToDeployment(app.id, "[INFO] Starting compose stack...\n");
+    await startComposeStack(path);
+  } finally {
+    clearDeploymentLogs(app.id);
+    await sendAppEvent(app.id);
+  }
+}
+
+export function getDeploymentLogs(appId: string) {
+  return currentDeployments.get(appId);
+}
+
+export function isDeploying(appId: string) {
+  return currentDeployments.has(appId);
+}
+
+function addLogsToDeployment(appId: string, log: string) {
+  currentDeployments.set(appId, (currentDeployments.get(appId) ?? "") + log);
+  sendDeploymentEvent(appId);
+}
+
+function clearDeploymentLogs(appId: string) {
+  currentDeployments.delete(appId);
+  sendDeploymentEvent(appId);
 }
