@@ -1,9 +1,9 @@
 import { EnvironmentVariable } from "@prisma/client";
-import { downAll, ps, upAll } from "docker-compose";
+import { downAll, ps } from "docker-compose";
 import Dockerode from "dockerode";
-import { spawn } from "node:child_process";
 import { load } from "js-yaml";
-import { readdir, stat, writeFile, readFile } from "node:fs/promises";
+import { spawn } from "node:child_process";
+import { readdir, readFile, stat, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { toMap } from "../utils/array";
 
@@ -45,8 +45,25 @@ export async function buildImage(
   });
 }
 
-export async function startComposeStack(path: string) {
-  return upAll({ cwd: path });
+export async function startComposeStack(
+  path: string,
+  progress: (value: string) => void
+) {
+  const deploy = spawn("docker", [
+    "compose",
+    "-f",
+    join(path, "docker-compose.yml"),
+    "up",
+    "-d",
+  ]);
+
+  // Docker logs to stderr, surprising, I know
+  deploy.stderr.on("data", (data) => progress(data.toString()));
+
+  return new Promise((resolve, reject) => {
+    deploy.on("error", () => {});
+    deploy.on("close", (code) => (code ? reject("") : resolve("")));
+  });
 }
 
 export async function stopComposeStack(path: string) {

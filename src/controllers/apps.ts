@@ -1,6 +1,11 @@
 import { RequestHandler } from "express";
-import { createAppValidator } from "../validators/app/create-app";
-import { prisma } from "../services/prisma";
+import promiseRetry from "promise-retry";
+import { authenticateUser } from "../services/auth";
+import {
+  getDeploymentLogs,
+  initDeploy,
+  isDeploying,
+} from "../services/deployer";
 import {
   getAllContainersStatus,
   getComposeConfiguration,
@@ -8,8 +13,6 @@ import {
   getContainerLogs,
   getContainerStatus,
   isImageAvailable,
-  saveComposeConfiguration,
-  startComposeStack,
   stopComposeStack,
 } from "../services/docker";
 import {
@@ -17,15 +20,7 @@ import {
   getAppDirectory,
   getOrCreateAppDirectory,
 } from "../services/fs";
-import { createBuild } from "./builds";
-import { authenticateUser } from "../services/auth";
-import { createComposeConfiguration } from "../helpers/docker";
-import promiseRetry from "promise-retry";
-import {
-  getDeploymentLogs,
-  initDeploy,
-  isDeploying,
-} from "../services/deployer";
+import { prisma } from "../services/prisma";
 import {
   addAppSubscriber,
   removeAppSubscriber,
@@ -35,6 +30,8 @@ import {
   addDeploymentSubscriber,
   removeDeploymentSubscriber,
 } from "../services/realtime/deploy";
+import { createAppValidator } from "../validators/app/create-app";
+import { createBuild } from "./builds";
 
 export const listApps: RequestHandler = async (req, res) => {
   await authenticateUser(req);

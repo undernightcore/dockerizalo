@@ -7,12 +7,12 @@ import {
   PortMapping,
 } from "@prisma/client";
 import { createComposeConfiguration } from "../helpers/docker";
-import { getOrCreateAppDirectory } from "./fs";
 import {
   saveComposeConfiguration,
   startComposeStack,
   stopComposeStack,
 } from "./docker";
+import { getOrCreateAppDirectory } from "./fs";
 import { sendAppEvent } from "./realtime/app";
 import { sendDeploymentEvent } from "./realtime/deploy";
 
@@ -48,8 +48,11 @@ export async function initDeploy(
     );
     await saveComposeConfiguration(composeFile, path);
 
-    addLogsToDeployment(app.id, "[INFO] Starting compose stack...\n");
-    await startComposeStack(path);
+    addLogsToDeployment(app.id, "[INFO] Starting compose stack...\n\n");
+
+    await startComposeStack(path, (log) => {
+      addLogsToDeployment(app.id, log);
+    });
   } finally {
     clearDeploymentLogs(app.id);
     await sendAppEvent(app.id);
