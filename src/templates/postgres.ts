@@ -13,7 +13,7 @@ export const postgresTemplate: TemplateInterface = {
   variables: async (app) => [
     {
       key: "POSTGRES_USER",
-      value: slug(app.name, "_"),
+      value: slug(app.name, "_").toLowerCase(),
       build: false,
       appId: app.id,
     },
@@ -30,6 +30,10 @@ export const postgresTemplate: TemplateInterface = {
     { host: "./db", internal: "/var/lib/postgresql/data", appId: app.id },
   ],
   networks: (app) => [
-    { name: slug(app.name, "_") + "_network", external: false, appId: app.id },
+    {
+      name: slug(app.name, "_").toLowerCase() + "_network",
+      external: false,
+      appId: app.id,
+    },
   ],
 };

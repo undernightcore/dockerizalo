@@ -15,5 +15,5 @@ export const createImageAppValidator = object({
   image: string({ required_error: "An image is required for your app" }),
   contextPath: optional(literal(null)).default(null),
   filePath: optional(literal(null)).default(null),
-  tokenId: nullable(string()),
+  tokenId: optional(nullable(string())).default(null),
 });

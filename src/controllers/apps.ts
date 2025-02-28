@@ -120,6 +120,11 @@ export const createAppFromTemplate: RequestHandler = async (req, res) => {
         description: data.description,
         image: template.image,
         mode: "IMAGE",
+        branch: null,
+        contextPath: null,
+        filePath: null,
+        tokenId: null,
+        repository: null,
       },
     });
 
