@@ -30,7 +30,9 @@ import {
   addDeploymentSubscriber,
   removeDeploymentSubscriber,
 } from "../services/realtime/deploy";
+import { templates } from "../templates";
 import { createAppValidator } from "../validators/app/create-app";
+import { createAppFromTemplateValidator } from "../validators/app/create-app-from-template";
 import { createBuild } from "./builds";
 
 export const listApps: RequestHandler = async (req, res) => {
@@ -90,6 +92,57 @@ export const createApp: RequestHandler = async (req, res) => {
 
   const app = await prisma.app.create({ data });
   res.status(201).json(app);
+};
+
+export const createAppFromTemplate: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
+  const data = createAppFromTemplateValidator.parse(req.body);
+
+  const exists = await prisma.app.findUnique({ where: { name: data.name } });
+  if (exists) {
+    res.status(400).json({ message: "An app with that name already exists" });
+    return;
+  }
+
+  const template = templates.find(
+    (template) => template.name === data.template
+  );
+  if (!template) {
+    res.status(400).json({ message: `No template with name ${data.template}` });
+    return;
+  }
+
+  const app = await prisma.$transaction(async (trx) => {
+    const createdApp = await trx.app.create({
+      data: {
+        name: data.name,
+        description: data.description,
+        image: template.image,
+        mode: "IMAGE",
+      },
+    });
+
+    await trx.portMapping.createMany({
+      data: await template.ports(createdApp),
+    });
+
+    await trx.environmentVariable.createMany({
+      data: await template.variables(createdApp),
+    });
+
+    await trx.network.createMany({
+      data: await template.networks(createdApp),
+    });
+
+    await trx.bindMount.createMany({
+      data: await template.volumes(createdApp),
+    });
+
+    return createdApp;
+  });
+
+  res.status(200).json(app);
 };
 
 export const deleteApp: RequestHandler = async (req, res) => {

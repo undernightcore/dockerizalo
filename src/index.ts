@@ -1,19 +1,20 @@
-import express, { json } from "express";
-import { appsRouter } from "./routes/apps";
-import { buildsRouter } from "./routes/builds";
+import cors from "cors";
 import { configDotenv } from "dotenv";
-import { variablesRouter } from "./routes/variables";
-import { mountsRouter } from "./routes/mounts";
-import { portsRouter } from "./routes/ports";
+import express, { json } from "express";
+import { authErrorHandler } from "./handlers/auth";
+import { defaultErrorHandler } from "./handlers/default";
 import { notFoundErrorHandler } from "./handlers/route";
 import { zodErrorHandler } from "./handlers/zod";
-import { defaultErrorHandler } from "./handlers/default";
-import { authErrorHandler } from "./handlers/auth";
+import { appsRouter } from "./routes/apps";
 import { authRouter } from "./routes/auth";
-import cors from "cors";
-import { tokensRouter } from "./routes/tokens";
-import { networksRouter } from "./routes/networks";
+import { buildsRouter } from "./routes/builds";
 import { labelsRouter } from "./routes/labels";
+import { mountsRouter } from "./routes/mounts";
+import { networksRouter } from "./routes/networks";
+import { portsRouter } from "./routes/ports";
+import { templatesRouter } from "./routes/templates";
+import { tokensRouter } from "./routes/tokens";
+import { variablesRouter } from "./routes/variables";
 
 configDotenv();
 
@@ -29,6 +30,7 @@ app.use("/apps/:appId/networks", networksRouter);
 app.use("/apps/:appId/labels", labelsRouter);
 app.use("/tokens", tokensRouter);
 app.use("/apps", appsRouter);
+app.use("/templates", templatesRouter);
 app.use("/auth", authRouter);
 
 app.use(notFoundErrorHandler);

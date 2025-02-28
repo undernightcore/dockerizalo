@@ -1,6 +1,7 @@
 import { Router } from "express";
 import {
   createApp,
+  createAppFromTemplate,
   deleteApp,
   listApps,
   listenApp,
@@ -18,6 +19,7 @@ router.get("/:appId/realtime", listenApp);
 router.get("/:appId/logs/realtime", listenAppLogs);
 router.get("/:appId/deployment/logs/realtime", listenAppDeploymentLogs);
 router.post("/", createApp);
+router.post("/template", createAppFromTemplate);
 router.put("/:appId", updateApp);
 router.delete("/:appId", deleteApp);
 router.post("/:appId/start", startApp);
