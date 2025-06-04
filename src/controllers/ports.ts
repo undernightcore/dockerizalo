@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
-import { prisma } from "../services/prisma";
 import { authenticateUser } from "../services/auth";
+import { prisma } from "../services/prisma";
 import { createPortValidator } from "../validators/port/create-port";
 import { updateAllPortsValidator } from "../validators/port/update-all.ports";
 
@@ -51,14 +51,8 @@ export const updatePort: RequestHandler = async (req, res) => {
 
   const data = createPortValidator.parse(req.body);
 
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
-  if (!app) {
-    res.status(404).json({ message: "There is no app with that id" });
-    return;
-  }
-
   const port = await prisma.portMapping.findUnique({
-    where: { id: req.params.portId },
+    where: { id: req.params.portId, appId: req.params.appId },
   });
   if (!port) {
     res.status(404).json({ message: "There is no port with that id" });
@@ -68,7 +62,7 @@ export const updatePort: RequestHandler = async (req, res) => {
   const existing = await prisma.portMapping.findFirst({
     where: {
       external: data.external,
-      appId: app.id,
+      appId: req.params.appId,
       NOT: { id: req.params.portId },
     },
   });
@@ -80,7 +74,7 @@ export const updatePort: RequestHandler = async (req, res) => {
   }
 
   const updated = await prisma.portMapping.update({
-    where: { id: port.id },
+    where: { id: port.id, appId: req.params.appId },
     data,
   });
 

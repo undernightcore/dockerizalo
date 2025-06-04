@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
-import { prisma } from "../services/prisma";
 import { authenticateUser } from "../services/auth";
+import { prisma } from "../services/prisma";
 import { createMountValidator } from "../validators/mount/create-mount";
 import { updateAllMountsValidator } from "../validators/mount/update-all-mounts";
 
@@ -43,14 +43,8 @@ export const updateMount: RequestHandler = async (req, res) => {
 
   const data = createMountValidator.parse(req.body);
 
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
-  if (!app) {
-    res.status(404).json({ message: "There is no app with that id" });
-    return;
-  }
-
   const existing = await prisma.bindMount.findUnique({
-    where: { id: req.params.mountId, appId: app.id },
+    where: { id: req.params.mountId, appId: req.params.appId },
   });
   if (!existing) {
     res.status(404).json({ message: "There is no bind mount with that id" });
@@ -58,7 +52,7 @@ export const updateMount: RequestHandler = async (req, res) => {
   }
 
   const updated = await prisma.bindMount.update({
-    where: { id: req.params.mountId, appId: app.id },
+    where: { id: req.params.mountId, appId: req.params.appId },
     data,
   });
 
@@ -68,14 +62,8 @@ export const updateMount: RequestHandler = async (req, res) => {
 export const deleteMount: RequestHandler = async (req, res) => {
   await authenticateUser(req);
 
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
-  if (!app) {
-    res.status(404).json({ message: "There is no app with that id" });
-    return;
-  }
-
   const existing = await prisma.bindMount.findUnique({
-    where: { id: req.params.mountId, appId: app.id },
+    where: { id: req.params.mountId, appId: req.params.appId },
   });
   if (!existing) {
     res.status(404).json({ message: "There is no bind mount with that id" });
@@ -83,7 +71,7 @@ export const deleteMount: RequestHandler = async (req, res) => {
   }
 
   await prisma.bindMount.delete({
-    where: { id: req.params.mountId, appId: app.id },
+    where: { id: req.params.mountId, appId: req.params.appId },
   });
 
   res.status(200).json({ message: "The mount has been deleted successfully" });

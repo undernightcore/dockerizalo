@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
-import { prisma } from "../services/prisma";
 import { authenticateUser } from "../services/auth";
+import { prisma } from "../services/prisma";
 import { createVariableValidator } from "../validators/variable/create-variable";
 import { updateAllVariablesValidator } from "../validators/variable/update-all-variables";
 
@@ -56,16 +56,12 @@ export const updateVariable: RequestHandler = async (req, res) => {
 
   const data = createVariableValidator.parse(req.body);
 
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
-  if (!app) {
-    res
-      .status(404)
-      .json({ message: "An application with that id does not exist" });
-    return;
-  }
-
   const conflicting = await prisma.environmentVariable.findFirst({
-    where: { key: data.key, NOT: { id: req.params.variableId } },
+    where: {
+      key: data.key,
+      appId: req.params.appId,
+      NOT: { id: req.params.variableId },
+    },
   });
   if (conflicting) {
     res
@@ -94,14 +90,6 @@ export const updateVariable: RequestHandler = async (req, res) => {
 
 export const deleteVariable: RequestHandler = async (req, res) => {
   await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
-  if (!app) {
-    res
-      .status(404)
-      .json({ message: "An application with that id does not exist" });
-    return;
-  }
 
   const existing = await prisma.environmentVariable.findUnique({
     where: { appId: req.params.appId, id: req.params.variableId },

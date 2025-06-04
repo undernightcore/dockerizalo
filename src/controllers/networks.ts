@@ -54,16 +54,12 @@ export const updateNetwork: RequestHandler = async (req, res) => {
 
   const data = createNetworkValidator.parse(req.body);
 
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
-  if (!app) {
-    res
-      .status(404)
-      .json({ message: "An application with that id does not exist" });
-    return;
-  }
-
   const conflicting = await prisma.network.findFirst({
-    where: { name: data.name, NOT: { id: req.params.networkId } },
+    where: {
+      name: data.name,
+      appId: req.params.appId,
+      NOT: { id: req.params.networkId },
+    },
   });
   if (conflicting) {
     res
@@ -92,14 +88,6 @@ export const updateNetwork: RequestHandler = async (req, res) => {
 
 export const deleteNetwork: RequestHandler = async (req, res) => {
   await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
-  if (!app) {
-    res
-      .status(404)
-      .json({ message: "An application with that id does not exist" });
-    return;
-  }
 
   const existing = await prisma.network.findUnique({
     where: { appId: req.params.appId, id: req.params.networkId },

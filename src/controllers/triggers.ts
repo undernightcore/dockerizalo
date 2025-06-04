@@ -15,6 +15,13 @@ export const listTriggers: RequestHandler = async (req, res) => {
     return;
   }
 
+  if (app.mode === "IMAGE") {
+    res
+      .status(400)
+      .json({ message: "Triggers do not work when an app is in IMAGE mode" });
+    return;
+  }
+
   const triggers = await prisma.trigger.findMany({ where: { appId: app.id } });
 
   res.status(200).json(triggers);
@@ -28,6 +35,13 @@ export const createTrigger: RequestHandler = async (req, res) => {
     res
       .status(404)
       .json({ message: "An application with that id does not exist" });
+    return;
+  }
+
+  if (app.mode === "IMAGE") {
+    res
+      .status(400)
+      .json({ message: "Triggers do not work when an app is in IMAGE mode" });
     return;
   }
 
@@ -61,10 +75,17 @@ export const editTrigger: RequestHandler = async (req, res) => {
     return;
   }
 
+  if (app.mode === "IMAGE") {
+    res
+      .status(400)
+      .json({ message: "Triggers do not work when an app is in IMAGE mode" });
+    return;
+  }
+
   const data = createTriggerValidator.parse(req.body);
 
   const trigger = await prisma.trigger.findUnique({
-    where: { id: req.params.triggerId },
+    where: { id: req.params.triggerId, appId: app.id },
   });
   if (!trigger) {
     res.status(404).json({ message: "A trigger with that id does not exist" });
@@ -87,7 +108,7 @@ export const editTrigger: RequestHandler = async (req, res) => {
   }
 
   const updated = await prisma.trigger.update({
-    where: { id: req.params.triggerId },
+    where: { id: req.params.triggerId, appId: req.params.appId },
     data,
   });
 
@@ -105,20 +126,44 @@ export const deleteTrigger: RequestHandler = async (req, res) => {
     return;
   }
 
+  if (app.mode === "IMAGE") {
+    res
+      .status(400)
+      .json({ message: "Triggers do not work when an app is in IMAGE mode" });
+    return;
+  }
+
   const trigger = await prisma.trigger.findUnique({
-    where: { id: req.params.triggerId },
+    where: { id: req.params.triggerId, appId: req.params.appId },
   });
   if (!trigger) {
     res.status(404).json({ message: "A trigger with that id does not exist" });
     return;
   }
 
-  await prisma.trigger.delete({ where: { id: req.params.triggerId } });
+  await prisma.trigger.delete({
+    where: { id: req.params.triggerId, appId: req.params.appId },
+  });
 
   res.status(200).json({ message: "The trigger has been deleted" });
 };
 
 export const runTrigger: RequestHandler = async (req, res, next) => {
+  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  if (!app) {
+    res
+      .status(404)
+      .json({ message: "An application with that id does not exist" });
+    return;
+  }
+
+  if (app.mode === "IMAGE") {
+    res
+      .status(400)
+      .json({ message: "Triggers do not work when an app is in IMAGE mode" });
+    return;
+  }
+
   const trigger = await prisma.trigger.findUnique({
     where: { id: req.params.triggerId, appId: req.params.appId },
   });

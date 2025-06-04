@@ -54,16 +54,12 @@ export const updateLabel: RequestHandler = async (req, res) => {
 
   const data = createLabelValidator.parse(req.body);
 
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
-  if (!app) {
-    res
-      .status(404)
-      .json({ message: "An application with that id does not exist" });
-    return;
-  }
-
   const conflicting = await prisma.label.findFirst({
-    where: { key: data.key, NOT: { id: req.params.labelId } },
+    where: {
+      key: data.key,
+      appId: req.params.appId,
+      NOT: { id: req.params.labelId },
+    },
   });
   if (conflicting) {
     res.status(400).json({ message: "There is already a label with that key" });
@@ -90,14 +86,6 @@ export const updateLabel: RequestHandler = async (req, res) => {
 
 export const deleteLabel: RequestHandler = async (req, res) => {
   await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
-  if (!app) {
-    res
-      .status(404)
-      .json({ message: "An application with that id does not exist" });
-    return;
-  }
 
   const existing = await prisma.label.findUnique({
     where: { appId: req.params.appId, id: req.params.labelId },
