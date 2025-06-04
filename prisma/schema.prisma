@@ -32,6 +32,7 @@ model App {
   builds      Build[]
   networks    Network[]
   labels      Label[]
+  triggers    Trigger[]
 }
 
 model PortMapping {
@@ -102,6 +103,15 @@ model Token {
   username String
   password String
   apps     App[]
+}
+
+model Trigger {
+  id    String @id @default(uuid())
+  name  String
+  app   App    @relation(fields: [appId], references: [id])
+  appId String
+
+  @@unique([name, appId])
 }
 
 enum Status {

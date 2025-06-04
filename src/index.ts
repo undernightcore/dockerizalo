@@ -14,6 +14,7 @@ import { networksRouter } from "./routes/networks";
 import { portsRouter } from "./routes/ports";
 import { templatesRouter } from "./routes/templates";
 import { tokensRouter } from "./routes/tokens";
+import { triggersRouter } from "./routes/triggers";
 import { variablesRouter } from "./routes/variables";
 
 configDotenv();
@@ -28,6 +29,7 @@ app.use("/apps/:appId/variables", variablesRouter);
 app.use("/apps/:appId/builds", buildsRouter);
 app.use("/apps/:appId/networks", networksRouter);
 app.use("/apps/:appId/labels", labelsRouter);
+app.use("/apps/:appId/triggers", triggersRouter);
 app.use("/tokens", tokensRouter);
 app.use("/apps", appsRouter);
 app.use("/templates", templatesRouter);
