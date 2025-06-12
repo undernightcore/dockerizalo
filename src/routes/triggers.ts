@@ -7,7 +7,7 @@ import {
   runTrigger,
 } from "../controllers/triggers";
 
-const router = Router();
+const router = Router({ mergeParams: true });
 
 router.get("/", listTriggers);
 router.post("/:triggerId", createTrigger);
