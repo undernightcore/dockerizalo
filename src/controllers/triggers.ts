@@ -183,7 +183,7 @@ export const runTrigger: RequestHandler = async (req, res) => {
 
   const build = await prisma.build.create({
     data: {
-      manual: true,
+      manual: false,
       branch: repositoryApp.branch,
       log: "",
       appId: app.id,
