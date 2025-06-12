@@ -10,7 +10,7 @@ import {
 const router = Router({ mergeParams: true });
 
 router.get("/", listTriggers);
-router.post("/:triggerId", createTrigger);
+router.post("/", createTrigger);
 router.put("/:triggerId", editTrigger);
 router.delete("/:triggerId", deleteTrigger);
 router.post("/:triggerId/webhook", runTrigger);
