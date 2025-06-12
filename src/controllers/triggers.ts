@@ -1,8 +1,11 @@
 import { RequestHandler } from "express";
 import { authenticateUser } from "../services/auth";
+import { initBuild } from "../services/builder";
+import { initDeploy } from "../services/deployer";
 import { prisma } from "../services/prisma";
+import { sendAppBuildsEvent } from "../services/realtime/app-builds";
+import { createRepositoryAppValidator } from "../validators/app/create-repository-app";
 import { createTriggerValidator } from "../validators/trigger/create-trigger";
-import { createBuild } from "./builds";
 
 export const listTriggers: RequestHandler = async (req, res) => {
   await authenticateUser(req);
@@ -148,8 +151,11 @@ export const deleteTrigger: RequestHandler = async (req, res) => {
   res.status(200).json({ message: "The trigger has been deleted" });
 };
 
-export const runTrigger: RequestHandler = async (req, res, next) => {
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+export const runTrigger: RequestHandler = async (req, res) => {
+  const app = await prisma.app.findUnique({
+    where: { id: req.params.appId },
+    include: { token: true },
+  });
   if (!app) {
     res
       .status(404)
@@ -173,5 +179,63 @@ export const runTrigger: RequestHandler = async (req, res, next) => {
     return;
   }
 
-  await createBuild(req, res, next);
+  const repositoryApp = createRepositoryAppValidator.parse(app);
+
+  const build = await prisma.build.create({
+    data: {
+      manual: true,
+      branch: repositoryApp.branch,
+      log: "",
+      appId: app.id,
+    },
+  });
+
+  let variables = await prisma.environmentVariable.findMany({
+    where: { appId: app.id },
+  });
+
+  res.status(201).json(build);
+
+  sendAppBuildsEvent(app.id);
+
+  try {
+    await initBuild(
+      repositoryApp,
+      build,
+      variables.filter((variable) => variable.build),
+      app.token ?? undefined
+    );
+  } catch {
+    console.error("[ERROR] Build failed asyncronously");
+    return;
+  }
+
+  variables = await prisma.environmentVariable.findMany({
+    where: { appId: app.id },
+  });
+
+  const [ports, volumes, networks, labels] = await prisma.$transaction([
+    prisma.portMapping.findMany({
+      where: { appId: app.id },
+    }),
+    prisma.bindMount.findMany({
+      where: { appId: app.id },
+    }),
+    prisma.network.findMany({
+      where: { appId: app.id },
+    }),
+    prisma.label.findMany({
+      where: { appId: app.id },
+    }),
+  ]);
+
+  initDeploy(
+    app,
+    `dockerizalo-${build.id}`,
+    ports,
+    volumes,
+    variables,
+    networks,
+    labels
+  ).catch(() => console.error("[ERROR] Deployment failed asyncronously"));
 };
