@@ -20,7 +20,7 @@ services:
   proxy:
     image: ghcr.io/undernightcore/dockerizalo-proxy:latest
     ports:
-      - '8080:8080'
+      - "8080:8080"
     depends_on:
       - api
       - ui
@@ -79,4 +79,4 @@ Wherever you configure in the Dockerizalo docker-compose.yml file. By default in
 
 ### Does it redeploy automatically after pushing to the source GIT repository?
 
-By default, no. There is an API endpoint that builds a new version under the `POST /api/apps/{appId}/builds` route. You can configure a Webhook and call that endpoint from any service.
+You can configure automatic deployments individually for each app. Just go to the Triggers section of your app and create a webhook. Then, configure any provider — like GitHub — to send a request to that webhook. Dockerizalo will automatically build and deploy your app every time the webhook is triggered.
