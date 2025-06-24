@@ -114,6 +114,12 @@ model Trigger {
   @@unique([name, appId])
 }
 
+model Setting {
+  id    String @id @default(uuid())
+  name  String @unique
+  value String
+}
+
 enum Status {
   BUILDING
   FAILED
