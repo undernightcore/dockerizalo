@@ -115,9 +115,16 @@ model Trigger {
 }
 
 model Setting {
-  id    String @id @default(uuid())
-  name  String @unique
+  id    String      @id @default(uuid())
+  name  String      @unique
+  type  SettingType @default(STRING)
   value String
+}
+
+enum SettingType {
+  STRING
+  INTEGER
+  BOOLEAN
 }
 
 enum Status {
