@@ -148,3 +148,12 @@ export async function isImageAvailable(name: string) {
     return false;
   }
 }
+
+export async function removeImages(images: string[]) {
+  const removal = spawn("docker", ["image", "rm", ...images]);
+
+  return new Promise((resolve) => {
+    removal.on("error", () => {});
+    removal.on("close", () => resolve(true));
+  });
+}

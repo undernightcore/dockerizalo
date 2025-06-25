@@ -1,9 +1,9 @@
 import { RequestHandler } from "express";
-import { prisma } from "../services/prisma";
+import { authenticateUser } from "../services/auth";
 import { abortBuild, initBuild } from "../services/builder";
 import { initDeploy } from "../services/deployer";
-import { authenticateUser } from "../services/auth";
-import { createRepositoryAppValidator } from "../validators/app/create-repository-app";
+import { removeImages } from "../services/docker";
+import { prisma } from "../services/prisma";
 import {
   addAppBuildsSubscriber,
   removeAppBuildsSubscriber,
@@ -13,6 +13,7 @@ import {
   addBuildSubscriber,
   removeBuildSubscriber,
 } from "../services/realtime/build";
+import { createRepositoryAppValidator } from "../validators/app/create-repository-app";
 
 export const createBuild: RequestHandler = async (req, res) => {
   await authenticateUser(req);
@@ -76,6 +77,22 @@ export const createBuild: RequestHandler = async (req, res) => {
       where: { appId: app.id },
     }),
   ]);
+
+  try {
+    const MAX_IMAGES = await prisma.setting.findFirstOrThrow({
+      where: { name: "MAX_IMAGES" },
+    });
+
+    const builds = await prisma.build.findMany({
+      where: { appId: app.id, status: "SUCCESS" },
+      skip: Number(MAX_IMAGES.value),
+      take: MAX_IMAGES.max ?? undefined,
+    });
+
+    await removeImages(builds.map(({ id }) => `dockerizalo-${id}`));
+  } catch {
+    console.warn("[WARN] Could not delete old images");
+  }
 
   initDeploy(
     app,

@@ -119,6 +119,8 @@ model Setting {
   name  String      @unique
   type  SettingType @default(STRING)
   value String
+  min   Int?
+  max   Int?
 }
 
 enum SettingType {

@@ -27,7 +27,7 @@ export const editSetting: RequestHandler = async (req, res) => {
     return;
   }
 
-  const data = updateSettingValidator(setting.type).parse(req.body);
+  const data = updateSettingValidator(setting).parse(req.body);
 
   const updated = await prisma.setting.update({
     where: { id: req.params.settingId },
