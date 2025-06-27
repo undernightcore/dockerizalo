@@ -110,9 +110,14 @@ export async function getAllContainersStatus() {
 export function getContainerLogs(
   name: string,
   progress: (status: any) => void,
-  abort: AbortSignal
+  abort: AbortSignal,
+  tail?: number
 ) {
-  const logs = spawn("docker", ["logs", name, "-f"], { signal: abort });
+  const logs = spawn(
+    "docker",
+    ["logs", name, "-f", "-n", tail ? String(tail) : "all"],
+    { signal: abort }
+  );
 
   logs.stdout.on("data", (value) => progress(value.toString()));
   logs.stderr.on("data", (value) => progress(value.toString()));

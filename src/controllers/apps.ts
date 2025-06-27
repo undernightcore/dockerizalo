@@ -33,6 +33,7 @@ import {
 import { templates } from "../templates";
 import { createAppValidator } from "../validators/app/create-app";
 import { createAppFromTemplateValidator } from "../validators/app/create-app-from-template";
+import { listenAppLogsValidator } from "../validators/app/listen-app-logs";
 import { createBuild } from "./builds";
 
 export const listApps: RequestHandler = async (req, res) => {
@@ -359,6 +360,8 @@ export const listenAppLogs: RequestHandler = async (req, res) => {
     return;
   }
 
+  const { tail } = listenAppLogsValidator.parse(req.query);
+
   const status = await getContainerStatus(`dockerizalo-${req.params.appId}`);
   if (status !== "running" && status !== "restarting") {
     res.status(400).json({ message: "The app is not running" });
@@ -382,7 +385,8 @@ export const listenAppLogs: RequestHandler = async (req, res) => {
         (progress) => {
           res.write(`data: ${JSON.stringify(progress)}\n\n`);
         },
-        abort.signal
+        abort.signal,
+        tail
       ).catch((error) => (!abort.signal.aborted ? retry(error) : undefined)),
     { forever: true, maxTimeout: 1000 }
   );
