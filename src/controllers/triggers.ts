@@ -239,6 +239,7 @@ export const runTrigger: RequestHandler = async (req, res) => {
       where: { appId: app.id, status: "SUCCESS" },
       skip: Number(MAX_IMAGES.value),
       take: MAX_IMAGES.max ?? undefined,
+      orderBy: { createdAt: "desc" },
     });
 
     await removeImages(builds.map(({ id }) => `dockerizalo-${id}`));
