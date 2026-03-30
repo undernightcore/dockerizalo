@@ -162,3 +162,12 @@ export async function removeImages(images: string[]) {
     removal.on("close", () => resolve(true));
   });
 }
+
+export async function removeDanglingImages() {
+  const removal = spawn("docker", ["image", "prune", "-f"]);
+
+  return new Promise((resolve) => {
+    removal.on("error", () => {});
+    removal.on("close", () => resolve(true));
+  });
+}

@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import { authenticateUser } from "../services/auth";
 import { abortBuild, initBuild } from "../services/builder";
 import { initDeploy } from "../services/deployer";
-import { removeImages } from "../services/docker";
+import { removeDanglingImages, removeImages } from "../services/docker";
 import { prisma } from "../services/prisma";
 import {
   addAppBuildsSubscriber,
@@ -91,6 +91,7 @@ export const createBuild: RequestHandler = async (req, res) => {
     });
 
     await removeImages(builds.map(({ id }) => `dockerizalo-${id}`));
+    await removeDanglingImages();
   } catch {
     console.warn("[WARN] Could not delete old images");
   }
