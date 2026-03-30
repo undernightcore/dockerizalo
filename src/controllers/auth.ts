@@ -107,6 +107,8 @@ export const removeUser: RequestHandler = async (req, res) => {
     return;
   }
 
+  await prisma.user.delete({ where: { id: user.id } });
+
   res.status(200).json({ message: "Deleted successfully!" });
 };
 
