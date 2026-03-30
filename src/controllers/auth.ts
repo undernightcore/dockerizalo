@@ -1,18 +1,19 @@
-import { RequestHandler, request } from "express";
-import { prisma } from "../services/prisma";
-import { authenticateUser } from "../services/auth";
+import { RequestHandler } from "express";
 import { hashPassword, isValidPassword } from "../helpers/bcrypt";
 import { createToken } from "../helpers/jwt";
-import { registerUserValidator } from "../validators/user/register-user";
+import { authenticateUser } from "../services/auth";
+import { prisma } from "../services/prisma";
+import { editUserValidator } from "../validators/user/edit-user";
 import { loginUserValidator } from "../validators/user/login-user";
+import { registerUserValidator } from "../validators/user/register-user";
 
 export const registerUser: RequestHandler = async (req, res) => {
   const data = registerUserValidator.parse(req.body);
 
-  const user = await authenticateUser(request).catch(() => undefined);
+  const admin = await authenticateUser(req).catch(() => undefined);
   const users = await prisma.user.count();
 
-  if (!user && users) {
+  if (!admin && users) {
     res.status(400).json({
       message:
         "Registering is disabled, please ask an administrator to create an account",
@@ -53,6 +54,60 @@ export const loginUser: RequestHandler = async (req, res) => {
   }
 
   res.json({ token: createToken(user.id) });
+};
+
+export const getUsers: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
+  const users = await prisma.user.findMany({
+    select: { id: true, email: true, name: true },
+  });
+
+  res.status(200).json(users);
+};
+
+export const editUser: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+  const data = editUserValidator.parse(req.body);
+
+  const current = await prisma.user.findUnique({
+    where: { id: Number(req.params.userId) },
+  });
+  if (!current) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  const conflicting = await prisma.user.findUnique({
+    where: { email: data.email, NOT: { id: current.id } },
+  });
+  if (conflicting) {
+    res.status(400).json({ message: "A user with that email already exists" });
+    return;
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: current.id },
+    data: {
+      ...data,
+      password: data.password ? await hashPassword(data.password) : undefined,
+    },
+  });
+  res.status(200).json(updated);
+};
+
+export const removeUser: RequestHandler = async (req, res) => {
+  await authenticateUser(req);
+
+  const user = await prisma.user.findUnique({
+    where: { id: Number(req.params.userId) },
+  });
+  if (!user) {
+    res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  res.status(200).json({ message: "Deleted successfully!" });
 };
 
 export const getUser: RequestHandler = async (req, res) => {
