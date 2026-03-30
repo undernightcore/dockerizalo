@@ -108,7 +108,7 @@ model Token {
 model Trigger {
   id    String @id @default(uuid())
   name  String
-  app   App    @relation(fields: [appId], references: [id])
+  app   App    @relation(fields: [appId], references: [id], onDelete: Cascade)
   appId String
 
   @@unique([name, appId])
