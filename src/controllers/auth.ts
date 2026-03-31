@@ -78,9 +78,11 @@ export const editUser: RequestHandler = async (req, res) => {
     return;
   }
 
-  const conflicting = await prisma.user.findUnique({
-    where: { email: data.email, NOT: { id: current.id } },
-  });
+  const conflicting = data.email
+    ? await prisma.user.findUnique({
+        where: { email: data.email, NOT: { id: current.id } },
+      })
+    : undefined;
   if (conflicting) {
     res.status(400).json({ message: "A user with that email already exists" });
     return;
