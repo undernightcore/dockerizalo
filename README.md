@@ -38,10 +38,10 @@ services:
   ui:
     image: ghcr.io/undernightcore/dockerizalo-ui:latest
   db:
-    image: postgres
+    image: postgres:latest
     restart: unless-stopped
     volumes:
-      - ./pg:/var/lib/postgresql/data
+      - ./pg:/var/lib/postgresql
     environment:
       POSTGRES_PASSWORD: dockerizalo
       POSTGRES_USER: dockerizalo
