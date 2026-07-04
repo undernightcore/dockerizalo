@@ -20,6 +20,6 @@ const clearZombieBuilds = async () => {
 };
 
 clearZombieBuilds().then((builds) => {
-  console.log(`Sucessfully fixed ${builds} builds`);
+  console.log(`Successfully fixed ${builds} builds`);
   process.exit(0);
 });
