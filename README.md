@@ -53,6 +53,10 @@ services:
       retries: 5
 ```
 
+## One-Click Deploy
+
+[![Deploy on RepoCloud](https://d16t0pc4846x52.cloudfront.net/deploylobe.svg)](https://repocloud.io/details/Dockerizalo/)
+
 ## Screenshots
 
 ![Home](https://github.com/undernightcore/dockerizalo-ui/blob/assets/home.png?raw=true)
