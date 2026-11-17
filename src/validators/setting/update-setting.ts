@@ -1,4 +1,4 @@
-import { Setting, SettingType } from "@prisma/client";
+import { Setting, SettingType } from "../../../prisma/generated/client";
 import { boolean, number, object, string } from "zod";
 
 export const updateSettingValidator = (setting: Setting) =>

@@ -1,4 +1,4 @@
-import { Token } from "@prisma/client";
+import { Token } from "../../prisma/generated/client";
 import simpleGit from "simple-git";
 
 export function cloneRepo(

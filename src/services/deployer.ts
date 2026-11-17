@@ -5,7 +5,7 @@ import {
   Label,
   Network,
   PortMapping,
-} from "@prisma/client";
+} from "../../prisma/generated/client";
 import { createComposeConfiguration } from "../helpers/docker";
 import {
   saveComposeConfiguration,

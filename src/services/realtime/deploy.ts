@@ -1,4 +1,4 @@
-import { App } from "@prisma/client";
+import { App } from "../../../prisma/generated/client";
 
 import { randomUUID } from "node:crypto";
 import { Response } from "express";

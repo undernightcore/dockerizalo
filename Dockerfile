@@ -4,6 +4,8 @@ WORKDIR /usr/local/app
 
 COPY ./package.json /usr/local/app/
 COPY ./package-lock.json /usr/local/app/
+COPY ./prisma.config.ts /usr/local/app/
+COPY ./tsconfig.json /usr/local/app/
 COPY ./src /usr/local/app/src
 COPY ./prisma /usr/local/app/prisma
 COPY ./scripts /usr/local/app/scripts
@@ -14,10 +16,13 @@ RUN npm run build
 FROM node:lts
 
 WORKDIR /usr/local/app
+COPY --from=build /usr/local/app/package.json /usr/local/app/package.json
 COPY --from=build /usr/local/app/node_modules /usr/local/app/node_modules
 COPY --from=build /usr/local/app/dist /usr/local/app/dist
 COPY --from=build /usr/local/app/prisma /usr/local/app/prisma
 COPY --from=build /usr/local/app/scripts /usr/local/app/scripts
+COPY --from=build /usr/local/app/prisma.config.ts /usr/local/app/prisma.config.ts
+COPY --from=build /usr/local/app/tsconfig.json /usr/local/app/tsconfig.json
 
 RUN apt-get update && apt-get install -y git
 

@@ -1,4 +1,4 @@
-import { Build, EnvironmentVariable, Token } from "@prisma/client";
+import { Build, EnvironmentVariable, Token } from "../../prisma/generated/client";
 import {
   createTemporalDirectory,
   deleteTemporalDirectory,
@@ -56,7 +56,8 @@ export const initBuild = async (
     await finishBuild(currentLog, true, build);
   } catch (e) {
     if (directory) await deleteTemporalDirectory(directory);
-    if (e.message) appendLogToBuild(currentLog, e.message, build);
+    if (e instanceof Error && e.message)
+      appendLogToBuild(currentLog, e.message, build);
 
     runningBuilds.delete(build.id);
     await finishBuild(currentLog, false, build);

@@ -1,4 +1,4 @@
-import { EnvironmentVariable } from "@prisma/client";
+import { EnvironmentVariable } from "../../prisma/generated/client";
 import { downAll, ps } from "docker-compose";
 import Dockerode from "dockerode";
 import { load } from "js-yaml";

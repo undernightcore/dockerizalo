@@ -1,8 +1,14 @@
 // This script cleans any zombie builds that are left in BUILDING status
 
-import { PrismaClient } from "@prisma/client";
+import "dotenv/config";
+import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "../prisma/generated/client";
 
-const prisma = new PrismaClient();
+const adapter = new PrismaPg({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const prisma = new PrismaClient({ adapter });
 
 const clearZombieBuilds = async () => {
   const builds = await prisma.build.findMany({ where: { status: "BUILDING" } });

@@ -1,4 +1,4 @@
-import { SettingType } from "@prisma/client";
+import { SettingType } from "../../prisma/generated/client";
 
 export const castToType = (value: string, type: SettingType) =>
   ({

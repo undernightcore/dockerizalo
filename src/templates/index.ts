@@ -4,7 +4,7 @@ import {
   EnvironmentVariable,
   Network,
   PortMapping,
-} from "@prisma/client";
+} from "../../prisma/generated/client";
 import { postgresTemplate } from "./postgres";
 
 type MaybePromise<T> = Promise<T> | T;
