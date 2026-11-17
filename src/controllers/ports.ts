@@ -1,13 +1,11 @@
 import { RequestHandler } from "express";
-import { authenticateUser } from "../services/auth";
+import { authenticateMember } from "../services/auth";
 import { prisma } from "../services/prisma";
 import { createPortValidator } from "../validators/port/create-port";
 import { updateAllPortsValidator } from "../validators/port/update-all.ports";
 
 export const listPorts: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "There is no app with that id" });
     return;
@@ -19,15 +17,20 @@ export const listPorts: RequestHandler = async (req, res) => {
 };
 
 export const createPort: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const data = createPortValidator.parse(req.body);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "There is no app with that id" });
     return;
   }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
+
+  const data = createPortValidator.parse(req.body);
 
   const existing = await prisma.portMapping.findFirst({
     where: { external: data.external, appId: app.id },
@@ -47,12 +50,23 @@ export const createPort: RequestHandler = async (req, res) => {
 };
 
 export const updatePort: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const { app, role } = await authenticateMember(req);
+  if (!app) {
+    res.status(404).json({ message: "There is no app with that id" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
 
   const data = createPortValidator.parse(req.body);
 
   const port = await prisma.portMapping.findUnique({
-    where: { id: req.params.portId, appId: req.params.appId },
+    where: { id: req.params.portId, appId: app.id },
   });
   if (!port) {
     res.status(404).json({ message: "There is no port with that id" });
@@ -62,7 +76,7 @@ export const updatePort: RequestHandler = async (req, res) => {
   const existing = await prisma.portMapping.findFirst({
     where: {
       external: data.external,
-      appId: req.params.appId,
+      appId: app.id,
       NOT: { id: req.params.portId },
     },
   });
@@ -74,7 +88,7 @@ export const updatePort: RequestHandler = async (req, res) => {
   }
 
   const updated = await prisma.portMapping.update({
-    where: { id: port.id, appId: req.params.appId },
+    where: { id: port.id, appId: app.id },
     data,
   });
 
@@ -82,37 +96,47 @@ export const updatePort: RequestHandler = async (req, res) => {
 };
 
 export const deletePort: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "There is no app with that id" });
     return;
   }
 
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
+
   const port = await prisma.portMapping.findUnique({
-    where: { id: req.params.portId },
+    where: { id: req.params.portId, appId: app.id },
   });
   if (!port) {
     res.status(404).json({ message: "There is no port with that id" });
     return;
   }
 
-  await prisma.portMapping.delete({ where: { id: port.id } });
+  await prisma.portMapping.delete({ where: { id: port.id, appId: app.id } });
 
   res.status(200).json({ message: "The port has been deleted" });
 };
 
 export const updateAllPorts: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const data = updateAllPortsValidator.parse(req.body);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "There is no app with that id" });
     return;
   }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
+
+  const data = updateAllPortsValidator.parse(req.body);
 
   await prisma.$transaction([
     prisma.portMapping.deleteMany({ where: { appId: app.id } }),

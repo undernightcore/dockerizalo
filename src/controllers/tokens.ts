@@ -1,10 +1,10 @@
 import { RequestHandler } from "express";
-import { authenticateUser } from "../services/auth";
+import { authenticateAdmin } from "../services/auth";
 import { prisma } from "../services/prisma";
 import { createTokenValidator } from "../validators/token/create-token";
 
 export const listTokens: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  await authenticateAdmin(req);
 
   const tokens = await prisma.token.findMany();
 
@@ -12,7 +12,7 @@ export const listTokens: RequestHandler = async (req, res) => {
 };
 
 export const createToken: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  await authenticateAdmin(req);
 
   const data = createTokenValidator.parse(req.body);
 
@@ -30,7 +30,7 @@ export const createToken: RequestHandler = async (req, res) => {
 };
 
 export const deleteToken: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  await authenticateAdmin(req);
 
   const token = await prisma.token.findUnique({
     where: { id: req.params.tokenId },
@@ -46,7 +46,7 @@ export const deleteToken: RequestHandler = async (req, res) => {
 };
 
 export const updateToken: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  await authenticateAdmin(req);
 
   const data = createTokenValidator.parse(req.body);
 

@@ -10,6 +10,7 @@ The simplest deployment platform made for self-hosters.
 
 - Clones from any GIT compatible source, builds and deploys the image for you.
 - Manage secrets, volumes, ports and more through the web UI.
+- Manage build/deploy permissions per user, per project
 - Check build and container logs in realtime.
 - Made to coexist with the rest of your applications in your homelab
 

@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { authenticateUser } from "../services/auth";
+import { authenticateMember } from "../services/auth";
 import { initBuild } from "../services/builder";
 import { initDeploy } from "../services/deployer";
 import { removeDanglingImages, removeImages } from "../services/docker";
@@ -9,9 +9,7 @@ import { createRepositoryAppValidator } from "../validators/app/create-repositor
 import { createTriggerValidator } from "../validators/trigger/create-trigger";
 
 export const listTriggers: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app } = await authenticateMember(req);
   if (!app) {
     res
       .status(404)
@@ -32,13 +30,18 @@ export const listTriggers: RequestHandler = async (req, res) => {
 };
 
 export const createTrigger: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res
       .status(404)
       .json({ message: "An application with that id does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
     return;
   }
 
@@ -69,13 +72,18 @@ export const createTrigger: RequestHandler = async (req, res) => {
 };
 
 export const editTrigger: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res
       .status(404)
       .json({ message: "An application with that id does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
     return;
   }
 
@@ -120,13 +128,18 @@ export const editTrigger: RequestHandler = async (req, res) => {
 };
 
 export const deleteTrigger: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res
       .status(404)
       .json({ message: "An application with that id does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
     return;
   }
 

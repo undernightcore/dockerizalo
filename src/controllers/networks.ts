@@ -1,13 +1,11 @@
 import { RequestHandler } from "express";
-import { authenticateUser } from "../services/auth";
+import { authenticateMember } from "../services/auth";
 import { prisma } from "../services/prisma";
 import { createNetworkValidator } from "../validators/network/create-network";
 import { updateAllNetworksValidator } from "../validators/network/update-all-networks";
 
 export const listNetworks: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app } = await authenticateMember(req);
   if (!app) {
     res
       .status(404)
@@ -23,11 +21,7 @@ export const listNetworks: RequestHandler = async (req, res) => {
 };
 
 export const createNetwork: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const data = createNetworkValidator.parse(req.body);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res
       .status(404)
@@ -35,8 +29,17 @@ export const createNetwork: RequestHandler = async (req, res) => {
     return;
   }
 
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
+
+  const data = createNetworkValidator.parse(req.body);
+
   const existing = await prisma.network.findFirst({
-    where: { appId: req.params.appId, name: data.name },
+    where: { appId: app.id, name: data.name },
   });
   if (existing) {
     res.status(400).json({ message: "A network with that key already exists" });
@@ -44,20 +47,33 @@ export const createNetwork: RequestHandler = async (req, res) => {
   }
 
   const saved = await prisma.network.create({
-    data: { ...data, appId: req.params.appId },
+    data: { ...data, appId: app.id },
   });
   res.status(201).json(saved);
 };
 
 export const updateNetwork: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const { app, role } = await authenticateMember(req);
+  if (!app) {
+    res
+      .status(404)
+      .json({ message: "An application with that id does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
 
   const data = createNetworkValidator.parse(req.body);
 
   const conflicting = await prisma.network.findFirst({
     where: {
       name: data.name,
-      appId: req.params.appId,
+      appId: app.id,
       NOT: { id: req.params.networkId },
     },
   });
@@ -69,7 +85,7 @@ export const updateNetwork: RequestHandler = async (req, res) => {
   }
 
   const existing = await prisma.network.findUnique({
-    where: { appId: req.params.appId, id: req.params.networkId },
+    where: { appId: app.id, id: req.params.networkId },
   });
   if (!existing) {
     res.status(400).json({
@@ -79,7 +95,7 @@ export const updateNetwork: RequestHandler = async (req, res) => {
   }
 
   const updated = await prisma.network.update({
-    where: { id: req.params.networkId, appId: req.params.appId },
+    where: { id: req.params.networkId, appId: app.id },
     data,
   });
 
@@ -87,10 +103,23 @@ export const updateNetwork: RequestHandler = async (req, res) => {
 };
 
 export const deleteNetwork: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const { app, role } = await authenticateMember(req);
+  if (!app) {
+    res
+      .status(404)
+      .json({ message: "An application with that id does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
 
   const existing = await prisma.network.findUnique({
-    where: { appId: req.params.appId, id: req.params.networkId },
+    where: { appId: app.id, id: req.params.networkId },
   });
   if (!existing) {
     res.status(400).json({
@@ -100,24 +129,29 @@ export const deleteNetwork: RequestHandler = async (req, res) => {
   }
 
   await prisma.network.delete({
-    where: { id: req.params.networkId, appId: req.params.appId },
+    where: { id: req.params.networkId, appId: app.id },
   });
 
   res.status(200).json({ message: "The network has been deleted" });
 };
 
 export const updateAllNetworks: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const data = updateAllNetworksValidator.parse(req.body);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res
       .status(404)
       .json({ message: "An application with that id does not exist" });
     return;
   }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
+
+  const data = updateAllNetworksValidator.parse(req.body);
 
   await prisma.$transaction([
     prisma.network.deleteMany({ where: { appId: app.id } }),

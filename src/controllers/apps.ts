@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import promiseRetry from "promise-retry";
-import { authenticateUser } from "../services/auth";
+import { AppRole, UserRole } from "../../prisma/generated/client";
+import { authenticateMember, authenticateUser } from "../services/auth";
 import {
   getDeploymentLogs,
   initDeploy,
@@ -37,9 +38,14 @@ import { listenAppLogsValidator } from "../validators/app/listen-app-logs";
 import { createBuild } from "./builds";
 
 export const listApps: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const user = await authenticateUser(req);
 
-  const apps = await prisma.app.findMany();
+  const apps = await prisma.app.findMany({
+    where:
+      user.role === UserRole.ADMIN
+        ? undefined
+        : { members: { some: { userId: user.id } } },
+  });
   const containers = await getAllContainersStatus();
 
   const status = apps.map((app) => ({
@@ -51,12 +57,7 @@ export const listApps: RequestHandler = async (req, res) => {
 };
 
 export const listenApp: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({
-    where: { id: req.params.appId },
-  });
-
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "There is no app with that id" });
     return;
@@ -75,13 +76,14 @@ export const listenApp: RequestHandler = async (req, res) => {
   res.write(
     `data: ${JSON.stringify({
       ...app,
+      role,
       status: await getContainerStatus(`dockerizalo-${app.id}`),
-    })}\n\n`
+    })}\n\n`,
   );
 };
 
 export const createApp: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const user = await authenticateUser(req);
 
   const data = createAppValidator.parse(req.body);
 
@@ -91,12 +93,21 @@ export const createApp: RequestHandler = async (req, res) => {
     return;
   }
 
-  const app = await prisma.app.create({ data });
+  const app = await prisma.$transaction(async (trx) => {
+    const created = await trx.app.create({ data });
+
+    await trx.appMember.create({
+      data: { appId: created.id, userId: user.id, role: AppRole.EDITOR },
+    });
+
+    return created;
+  });
+
   res.status(201).json(app);
 };
 
 export const createAppFromTemplate: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const user = await authenticateUser(req);
 
   const data = createAppFromTemplateValidator.parse(req.body);
 
@@ -107,7 +118,7 @@ export const createAppFromTemplate: RequestHandler = async (req, res) => {
   }
 
   const template = templates.find(
-    (template) => template.name === data.template
+    (template) => template.name === data.template,
   );
   if (!template) {
     res.status(400).json({ message: `No template with name ${data.template}` });
@@ -127,6 +138,10 @@ export const createAppFromTemplate: RequestHandler = async (req, res) => {
         tokenId: null,
         repository: null,
       },
+    });
+
+    await trx.appMember.create({
+      data: { appId: createdApp.id, userId: user.id, role: AppRole.EDITOR },
     });
 
     await trx.portMapping.createMany({
@@ -152,13 +167,16 @@ export const createAppFromTemplate: RequestHandler = async (req, res) => {
 };
 
 export const deleteApp: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({
-    where: { id: req.params.appId },
-  });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "An app with that id does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to delete this app" });
     return;
   }
 
@@ -176,17 +194,20 @@ export const deleteApp: RequestHandler = async (req, res) => {
 };
 
 export const updateApp: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const data = createAppValidator.parse(req.body);
-
-  const app = await prisma.app.findUnique({
-    where: { id: req.params.appId },
-  });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "An app with that id does not exist" });
     return;
   }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
+
+  const data = createAppValidator.parse(req.body);
 
   const conflicting = await prisma.app.findUnique({
     where: { name: data.name, NOT: { id: app.id } },
@@ -207,14 +228,16 @@ export const updateApp: RequestHandler = async (req, res) => {
 };
 
 export const startApp: RequestHandler = async (req, res, next) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({
-    where: { id: req.params.appId },
-  });
-
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "An app with that id does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to start this app" });
     return;
   }
 
@@ -259,7 +282,7 @@ export const startApp: RequestHandler = async (req, res, next) => {
       volumes,
       variables,
       networks,
-      labels
+      labels,
     ).catch(() => console.error("[ERROR] Deployment failed asyncronously"));
     res.status(200).json({ message: "App is now starting..." });
     return;
@@ -310,20 +333,22 @@ export const startApp: RequestHandler = async (req, res, next) => {
     volumes,
     variables,
     networks,
-    labels
+    labels,
   ).catch(() => console.error("[ERROR] Deployment failed asyncronously"));
   res.status(200).json({ message: "App is now starting..." });
 };
 
 export const stopApp: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({
-    where: { id: req.params.appId },
-  });
-
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "An app with that id does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to stop this app" });
     return;
   }
 
@@ -349,12 +374,7 @@ export const stopApp: RequestHandler = async (req, res) => {
 };
 
 export const listenAppLogs: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({
-    where: { id: req.params.appId },
-  });
-
+  const { app } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "An app with that id does not exist" });
     return;
@@ -362,7 +382,7 @@ export const listenAppLogs: RequestHandler = async (req, res) => {
 
   const { tail } = listenAppLogsValidator.parse(req.query);
 
-  const status = await getContainerStatus(`dockerizalo-${req.params.appId}`);
+  const status = await getContainerStatus(`dockerizalo-${app.id}`);
   if (status !== "running" && status !== "restarting") {
     res.status(400).json({ message: "The app is not running" });
     return;
@@ -381,24 +401,19 @@ export const listenAppLogs: RequestHandler = async (req, res) => {
   promiseRetry(
     (retry) =>
       getContainerLogs(
-        `dockerizalo-${req.params.appId}`,
+        `dockerizalo-${app.id}`,
         (progress) => {
           res.write(`data: ${JSON.stringify(progress)}\n\n`);
         },
         abort.signal,
-        tail
+        tail,
       ).catch((error) => (!abort.signal.aborted ? retry(error) : undefined)),
-    { forever: true, maxTimeout: 1000 }
+    { forever: true, maxTimeout: 1000 },
   );
 };
 
 export const listenAppDeploymentLogs: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({
-    where: { id: req.params.appId },
-  });
-
+  const { app } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "An app with that id does not exist" });
     return;

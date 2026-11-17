@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { authenticateUser } from "../services/auth";
+import { authenticateMember } from "../services/auth";
 import { abortBuild, initBuild } from "../services/builder";
 import { initDeploy } from "../services/deployer";
 import { removeDanglingImages, removeImages } from "../services/docker";
@@ -16,15 +16,18 @@ import {
 import { createRepositoryAppValidator } from "../validators/app/create-repository-app";
 
 export const createBuild: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({
-    where: { id: req.params.appId },
-    include: { token: true },
+  const { app, role } = await authenticateMember(req, {
+    token: true,
   });
-
   if (!app) {
     res.status(404).json({ message: "This app does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to build this app" });
     return;
   }
 
@@ -52,7 +55,7 @@ export const createBuild: RequestHandler = async (req, res) => {
       repositoryApp,
       build,
       variables.filter((variable) => variable.build),
-      app.token ?? undefined
+      app.token ?? undefined,
     );
   } catch {
     console.error("[ERROR] Build failed asyncronously");
@@ -103,16 +106,12 @@ export const createBuild: RequestHandler = async (req, res) => {
     volumes,
     variables,
     networks,
-    labels
+    labels,
   ).catch(() => console.error("[ERROR] Deployment failed asyncronously"));
 };
 
 export const listenBuilds: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({
-    where: { id: req.params.appId },
-  });
+  const { app } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "This app does not exist" });
     return;
@@ -146,7 +145,11 @@ export const listenBuilds: RequestHandler = async (req, res) => {
 };
 
 export const listenBuild: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const { app } = await authenticateMember(req);
+  if (!app) {
+    res.status(404).json({ message: "This app does not exist" });
+    return;
+  }
 
   const build = await prisma.build.findUnique({
     where: { appId: req.params.appId, id: req.params.buildId },
@@ -171,7 +174,18 @@ export const listenBuild: RequestHandler = async (req, res) => {
 };
 
 export const cancelBuild: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const { app, role } = await authenticateMember(req);
+  if (!app) {
+    res.status(404).json({ message: "This app does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
 
   const build = await prisma.build.findUnique({
     where: { appId: req.params.appId, id: req.params.buildId },

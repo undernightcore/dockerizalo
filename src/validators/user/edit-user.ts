@@ -1,4 +1,5 @@
-import { object, string } from "zod";
+import { object, string, z } from "zod";
+import { UserRole } from "../../../prisma/generated/client";
 
 export const editUserValidator = object({
   name: string({ required_error: "A valid name is required" }).optional(),
@@ -6,4 +7,5 @@ export const editUserValidator = object({
     .email("It has to be a valid email")
     .optional(),
   password: string({ required_error: "A password is required" }).optional(),
+  role: z.enum([UserRole.USER, UserRole.ADMIN]).optional(),
 });

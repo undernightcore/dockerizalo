@@ -1,13 +1,11 @@
 import { RequestHandler } from "express";
-import { authenticateUser } from "../services/auth";
+import { authenticateMember } from "../services/auth";
 import { prisma } from "../services/prisma";
 import { createLabelValidator } from "../validators/label/create-labels";
 import { updateAllLabelsValidator } from "../validators/label/update-all-labels";
 
 export const listLabels: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app } = await authenticateMember(req);
   if (!app) {
     res
       .status(404)
@@ -23,11 +21,7 @@ export const listLabels: RequestHandler = async (req, res) => {
 };
 
 export const createLabel: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const data = createLabelValidator.parse(req.body);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res
       .status(404)
@@ -35,8 +29,17 @@ export const createLabel: RequestHandler = async (req, res) => {
     return;
   }
 
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
+
+  const data = createLabelValidator.parse(req.body);
+
   const existing = await prisma.label.findFirst({
-    where: { appId: req.params.appId, key: data.key },
+    where: { appId: app.id, key: data.key },
   });
   if (existing) {
     res.status(400).json({ message: "A label with that key already exists" });
@@ -44,20 +47,33 @@ export const createLabel: RequestHandler = async (req, res) => {
   }
 
   const saved = await prisma.label.create({
-    data: { ...data, appId: req.params.appId },
+    data: { ...data, appId: app.id },
   });
   res.status(201).json(saved);
 };
 
 export const updateLabel: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const { app, role } = await authenticateMember(req);
+  if (!app) {
+    res
+      .status(404)
+      .json({ message: "An application with that id does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
 
   const data = createLabelValidator.parse(req.body);
 
   const conflicting = await prisma.label.findFirst({
     where: {
       key: data.key,
-      appId: req.params.appId,
+      appId: app.id,
       NOT: { id: req.params.labelId },
     },
   });
@@ -67,7 +83,7 @@ export const updateLabel: RequestHandler = async (req, res) => {
   }
 
   const existing = await prisma.label.findUnique({
-    where: { appId: req.params.appId, id: req.params.labelId },
+    where: { appId: app.id, id: req.params.labelId },
   });
   if (!existing) {
     res.status(400).json({
@@ -77,7 +93,7 @@ export const updateLabel: RequestHandler = async (req, res) => {
   }
 
   const updated = await prisma.label.update({
-    where: { id: req.params.labelId, appId: req.params.appId },
+    where: { id: req.params.labelId, appId: app.id },
     data,
   });
 
@@ -85,10 +101,23 @@ export const updateLabel: RequestHandler = async (req, res) => {
 };
 
 export const deleteLabel: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const { app, role } = await authenticateMember(req);
+  if (!app) {
+    res
+      .status(404)
+      .json({ message: "An application with that id does not exist" });
+    return;
+  }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
 
   const existing = await prisma.label.findUnique({
-    where: { appId: req.params.appId, id: req.params.labelId },
+    where: { appId: app.id, id: req.params.labelId },
   });
   if (!existing) {
     res.status(400).json({
@@ -98,24 +127,29 @@ export const deleteLabel: RequestHandler = async (req, res) => {
   }
 
   await prisma.label.delete({
-    where: { id: req.params.labelId, appId: req.params.appId },
+    where: { id: req.params.labelId, appId: app.id },
   });
 
   res.status(200).json({ message: "The label has been deleted" });
 };
 
 export const updateAllLabels: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
-
-  const data = updateAllLabelsValidator.parse(req.body);
-
-  const app = await prisma.app.findUnique({ where: { id: req.params.appId } });
+  const { app, role } = await authenticateMember(req);
   if (!app) {
     res
       .status(404)
       .json({ message: "An application with that id does not exist" });
     return;
   }
+
+  if (role !== "EDITOR") {
+    res
+      .status(403)
+      .json({ message: "You do not have permission to edit this app" });
+    return;
+  }
+
+  const data = updateAllLabelsValidator.parse(req.body);
 
   await prisma.$transaction([
     prisma.label.deleteMany({ where: { appId: app.id } }),

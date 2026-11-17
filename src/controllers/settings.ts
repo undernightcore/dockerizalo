@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { castToType } from "../helpers/cast";
-import { authenticateUser } from "../services/auth";
+import { authenticateAdmin, authenticateUser } from "../services/auth";
 import { prisma } from "../services/prisma";
 import { updateSettingValidator } from "../validators/setting/update-setting";
 
@@ -17,7 +17,7 @@ export const getSettings: RequestHandler = async (req, res) => {
 };
 
 export const editSetting: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  await authenticateAdmin(req);
 
   const setting = await prisma.setting.findUnique({
     where: { id: req.params.settingId },

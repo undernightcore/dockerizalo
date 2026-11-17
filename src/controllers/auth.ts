@@ -1,7 +1,8 @@
 import { RequestHandler } from "express";
+import { UserRole } from "../../prisma/generated/client";
 import { hashPassword, isValidPassword } from "../helpers/bcrypt";
 import { createToken } from "../helpers/jwt";
-import { authenticateUser } from "../services/auth";
+import { authenticateAdmin, authenticateUser } from "../services/auth";
 import { prisma } from "../services/prisma";
 import { editUserValidator } from "../validators/user/edit-user";
 import { loginUserValidator } from "../validators/user/login-user";
@@ -10,10 +11,10 @@ import { registerUserValidator } from "../validators/user/register-user";
 export const registerUser: RequestHandler = async (req, res) => {
   const data = registerUserValidator.parse(req.body);
 
-  const admin = await authenticateUser(req).catch(() => undefined);
+  const current = await authenticateUser(req).catch(() => undefined);
   const users = await prisma.user.count();
 
-  if (!admin && users) {
+  if (users && current?.role !== UserRole.ADMIN) {
     res.status(400).json({
       message:
         "Registering is disabled, please ask an administrator to create an account",
@@ -32,7 +33,11 @@ export const registerUser: RequestHandler = async (req, res) => {
   }
 
   const createdUser = await prisma.user.create({
-    data: { ...data, password: await hashPassword(data.password) },
+    data: {
+      ...data,
+      role: users ? UserRole.USER : UserRole.ADMIN,
+      password: await hashPassword(data.password),
+    },
   });
 
   res.status(201).json({ token: createToken(createdUser.id) });
@@ -57,17 +62,17 @@ export const loginUser: RequestHandler = async (req, res) => {
 };
 
 export const getUsers: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  await authenticateAdmin(req);
 
   const users = await prisma.user.findMany({
-    select: { id: true, email: true, name: true },
+    select: { id: true, email: true, name: true, role: true },
   });
 
   res.status(200).json(users);
 };
 
 export const editUser: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const admin = await authenticateAdmin(req);
   const data = editUserValidator.parse(req.body);
 
   const current = await prisma.user.findUnique({
@@ -75,6 +80,11 @@ export const editUser: RequestHandler = async (req, res) => {
   });
   if (!current) {
     res.status(404).json({ message: "User not found" });
+    return;
+  }
+
+  if (current.id === admin.id && data.role === UserRole.USER) {
+    res.status(400).json({ message: "You cannot remove your own admin role" });
     return;
   }
 
@@ -94,12 +104,13 @@ export const editUser: RequestHandler = async (req, res) => {
       ...data,
       password: data.password ? await hashPassword(data.password) : undefined,
     },
+    select: { id: true, email: true, name: true, role: true },
   });
   res.status(200).json(updated);
 };
 
 export const removeUser: RequestHandler = async (req, res) => {
-  await authenticateUser(req);
+  const admin = await authenticateAdmin(req);
 
   const user = await prisma.user.findUnique({
     where: { id: Number(req.params.userId) },
@@ -109,12 +120,17 @@ export const removeUser: RequestHandler = async (req, res) => {
     return;
   }
 
+  if (user.id === admin.id) {
+    res.status(400).json({ message: "You cannot delete your own account" });
+    return;
+  }
+
   await prisma.user.delete({ where: { id: user.id } });
 
   res.status(200).json({ message: "Deleted successfully!" });
 };
 
 export const getUser: RequestHandler = async (req, res) => {
-  const { email, name, id } = await authenticateUser(req);
-  res.status(200).json({ email, name, id });
+  const { email, name, id, role } = await authenticateUser(req);
+  res.status(200).json({ email, name, id, role });
 };
