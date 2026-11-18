@@ -41,9 +41,9 @@
   "allowScripts": {
     "bcrypt@5.1.1": true,
     "@prisma/engines@7.10.1": true,
-    "esbuild@0.23.1": true,
-    "esbuild@0.24.2": true,
     "prisma@7.10.1": true,
-    "ssh2@1.16.0": true
+    "protobufjs@7.6.6": true,
+    "ssh2@1.17.0": true,
+    "esbuild@0.28.2": true
   }
 }

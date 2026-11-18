@@ -1,4 +1,4 @@
-FROM node:lts as build
+FROM node:24 as build
 
 WORKDIR /usr/local/app
 
@@ -13,7 +13,7 @@ COPY ./scripts /usr/local/app/scripts
 RUN npm install
 RUN npm run build
 
-FROM node:lts
+FROM node:24
 
 WORKDIR /usr/local/app
 COPY --from=build /usr/local/app/package.json /usr/local/app/package.json
