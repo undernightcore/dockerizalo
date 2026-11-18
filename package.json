@@ -1,6 +1,6 @@
 {
   "name": "dockerizalo",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "",
   "type": "module",
   "main": "dist/index.mjs",
