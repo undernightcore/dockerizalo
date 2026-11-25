@@ -1,7 +1,11 @@
 import { RequestHandler } from "express";
 import promiseRetry from "promise-retry";
 import { AppRole, UserRole } from "../../prisma/generated/client";
-import { authenticateMember, authenticateUser } from "../services/auth";
+import {
+  authenticateAdmin,
+  authenticateMember,
+  authenticateUser,
+} from "../services/auth";
 import {
   getDeploymentLogs,
   initDeploy,
@@ -83,7 +87,7 @@ export const listenApp: RequestHandler = async (req, res) => {
 };
 
 export const createApp: RequestHandler = async (req, res) => {
-  const user = await authenticateUser(req);
+  const user = await authenticateAdmin(req);
 
   const data = createAppValidator.parse(req.body);
 
@@ -107,7 +111,7 @@ export const createApp: RequestHandler = async (req, res) => {
 };
 
 export const createAppFromTemplate: RequestHandler = async (req, res) => {
-  const user = await authenticateUser(req);
+  const user = await authenticateAdmin(req);
 
   const data = createAppFromTemplateValidator.parse(req.body);
 
@@ -194,7 +198,7 @@ export const deleteApp: RequestHandler = async (req, res) => {
 };
 
 export const updateApp: RequestHandler = async (req, res) => {
-  const { app, role } = await authenticateMember(req);
+  const { app, role, user } = await authenticateMember(req);
   if (!app) {
     res.status(404).json({ message: "An app with that id does not exist" });
     return;
@@ -218,7 +222,10 @@ export const updateApp: RequestHandler = async (req, res) => {
   }
 
   const updated = await prisma.app.update({
-    data,
+    data: {
+      ...data,
+      tokenId: user.role === UserRole.ADMIN ? data.tokenId : undefined,
+    },
     where: { id: app.id },
   });
 
