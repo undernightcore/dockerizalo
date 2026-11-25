@@ -224,7 +224,7 @@ export const updateApp: RequestHandler = async (req, res) => {
   const updated = await prisma.app.update({
     data: {
       ...data,
-      tokenId: user.role === UserRole.ADMIN ? data.tokenId : undefined,
+      tokenId: user.role === UserRole.ADMIN ? data.tokenId : app.tokenId,
     },
     where: { id: app.id },
   });
