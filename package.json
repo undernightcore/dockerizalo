@@ -1,6 +1,6 @@
 {
   "name": "dockerizalo",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "",
   "type": "module",
   "main": "dist/index.mjs",
@@ -44,6 +44,7 @@
     "prisma@7.10.1": true,
     "protobufjs@7.6.6": true,
     "ssh2@1.17.0": true,
-    "esbuild@0.28.2": true
+    "esbuild@0.28.2": true,
+    "cpu-features@0.0.10": true
   }
 }
